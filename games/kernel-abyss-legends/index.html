@@ -316,7 +316,7 @@ function musTick(){
 function setMute(m){muted=m;SAVE.muted=m?1:0;putSave();if(MG)MG.gain.value=m?0:1}
 
 /* ================= input ================= */
-const held={},hit={},KM={KeyA:'L',ArrowLeft:'L',KeyD:'R',ArrowRight:'R',KeyW:'UP',ArrowUp:'UP',Space:'DS',KeyS:'DN',ArrowDown:'DN',KeyJ:'A',KeyZ:'A',KeyK:'S1',KeyX:'S1',KeyL:'S2',KeyC:'S2',ShiftLeft:'DS',ShiftRight:'DS',KeyU:'DS',KeyH:'HL',KeyQ:'HL'};
+const held={},hit={},KM={KeyA:'L',ArrowLeft:'L',KeyD:'R',ArrowRight:'R',KeyW:'UP',ArrowUp:'UP',Space:'DS',KeyS:'DN',ArrowDown:'DN',KeyJ:'A',KeyZ:'A',KeyF:'A',KeyQ:'S1',KeyK:'S1',KeyE:'S2',KeyL:'S2',ShiftLeft:'DS',ShiftRight:'DS',KeyU:'DS',KeyR:'HL',KeyH:'HL'};
 let onKey=null;
 function setAct(a,v){if(v&&!held[a])hit[a]=1;held[a]=v}
 addEventListener('keydown',e=>{
@@ -894,8 +894,8 @@ function mkBoss(z){
  const b={boss:1,z,type:'boss',x:room.R*.4,y:-room.R*.2,alt:300,vx:0,vy:0,w:d.w,h:d.h,r:d.w/2,hp:Math.round(d.hp*hm),mhp:0,dm:d.dm*(1+.035*z)*(1+.1*run.hard),fly:d.fly,face:-1,t:0,fl:0,arm:1,act:0,wt:0,p2:0,hurt:0,tel:0,trail:[],lk:-1,stunB:0,dr:0,dead:0,form:0,ghost:0,gT:0,frz:0,imT:0,hov:HOVER[z],idle:0,jz:0};
  b.mhp=b.hp;b.co=bossLoop(b);return b}
 function* bossLoop(b){
- yield .5;
- for(;;){const A=b.part?BA3B:BA[b.z],avail=A.length-(A.p2only&&!b.p2?1:0);let k;do{k=ri(0,avail-1)}while(k==b.lk&&avail>1);b.lk=k;b.idle=0;yield*A[k](b);b.vx=b.vy=0;b.idle=1;yield b.p2?.55:1}}
+ yield 1;
+ for(;;){const A=b.part?BA3B:BA[b.z],avail=A.length-(A.p2only&&!b.p2?1:0);let k;do{k=ri(0,avail-1)}while(k==b.lk&&avail>1);b.lk=k;b.idle=0;yield*A[k](b);b.vx=b.vy=0;b.idle=1;yield (b.p2?1.15:1.8)*(b.part!=null||b.twin?1.35:1)}}
 const aimB=b=>Math.atan2(P.y-b.y,P.x-b.x);
 const bossLim=b=>room.R-b.r-2;
 function* flyTo(b,x,y,sp){const L=bossLim(b);x=cl(x,-L,L);y=cl(y,-L,L);const dx=x-b.x,dy=y-b.y,d=Math.hypot(dx,dy);if(d<3)return;const t=d/sp;b.vx=dx/t;b.vy=dy/t;b.face=sfOf(P.x-b.x,P.y-b.y,b.face);yield t;b.vx=b.vy=0;b.x=x;b.y=y}
@@ -1214,9 +1214,9 @@ function rollRelics(w){const ids=shuffle(RL.map(r=>r.id));return ids.slice(0,3).
 function tutUpd(){
  if(!tut)return;const t=document.body.classList.contains('touch'),S=[
   ['เดินอิสระ 8 ทิศ',t?'ลากจอยสติ๊กที่มุมซ้ายล่าง':'กด <b>W A S D</b> หรือ <b>ลูกศร</b> เพื่อเดินไปรอบสนาม',()=>P.moved>140],
-  ['โจมตี',t?'กดปุ่ม <b>โจมตี</b> ค้างหรือกดรัวเพื่อทำคอมโบ (เล็งศัตรูใกล้สุดอัตโนมัติ)':'กด <b>J</b> หรือคลิกเมาส์เพื่อโจมตี กดต่อเนื่องเป็นคอมโบ (เล็งศัตรูใกล้สุดอัตโนมัติ)',()=>P.did.atk],
+  ['โจมตี',t?'กดปุ่ม <b>โจมตี</b> ค้างหรือกดรัวเพื่อทำคอมโบ (เล็งศัตรูใกล้สุดอัตโนมัติ)':'กด <b>J</b>, <b>F</b> หรือคลิกเมาส์เพื่อโจมตี กดต่อเนื่องเป็นคอมโบ (เล็งศัตรูใกล้สุดอัตโนมัติ)',()=>P.did.atk],
   ['แดช',t?'กดปุ่ม <b>แดช</b> เพื่อพุ่งหลบ ตัวจะไม่โดนโจมตีชั่วขณะ':'กด <b>Space</b> หรือ <b>Shift</b> เพื่อแดชหลบไปทางที่เดิน ตัวจะไม่โดนโจมตีชั่วขณะ',()=>P.did.dash],
-  ['สกิล',t?'กดปุ่มสกิล 2 ปุ่ม ใช้พลังงานแถบสีฟ้า (ตีโดนเพื่อชาร์จ)':'กด <b>K</b> หรือ <b>L</b> ใช้สกิล ใช้พลังงานแถบสีฟ้า (ตีโดนเพื่อชาร์จ)',()=>P.did.skill],
+  ['สกิล',t?'กดปุ่มสกิล 2 ปุ่ม ใช้พลังงานแถบสีฟ้า (ตีโดนเพื่อชาร์จ)':'กด <b>Q</b> หรือ <b>E</b> ใช้สกิล ใช้พลังงานแถบสีฟ้า (ตีโดนเพื่อชาร์จ)',()=>P.did.skill],
   ['กำจัดไวรัส','กำจัดไวรัสให้หมดห้อง เลือกเรลิก แล้วเดินไปทางออกที่มุมขวาของสนาม',()=>P.did.clear]];
  const tip=$('tip');
  if(tut.i>=S.length){tut=null;SAVE.tut=1;putSave();tip.hidden=true;return}
@@ -1400,7 +1400,7 @@ function statRow(l,v){return '<div class="st"><b>'+l+'</b><i style="width:calc(v
 function showSelect(){
  modal='menu';menuHero=-1;
  const cards=CH.map((c,i)=>'<button class="cc'+(i==selCh?' on':'')+'" data-go="pickch" data-arg="'+i+'"><canvas width="60" height="58" data-ci="'+i+'"></canvas><h4>'+c.n+'<span>'+c.t+'</span></h4><div class="ro">'+c.role+'</div>'+statRow('HP',c.stat[0])+statRow('ATK',c.stat[1])+statRow('SPD',c.stat[2])+
-  '<div class="sk2">'+icoImg(c.s1.ic,c.col)+'<div><b>K · '+c.s1.n+'</b><small>'+c.s1.th+'</small></div></div><div class="sk2">'+icoImg(c.s2.ic,c.col)+'<div><b>L · '+c.s2.n+'</b><small>'+c.s2.th+'</small></div></div></button>').join('');
+  '<div class="sk2">'+icoImg(c.s1.ic,c.col)+'<div><b>Q · '+c.s1.n+'</b><small>'+c.s1.th+'</small></div></div><div class="sk2">'+icoImg(c.s2.ic,c.col)+'<div><b>E · '+c.s2.n+'</b><small>'+c.s2.th+'</small></div></div></button>').join('');
  showOv('<div class="sel"><h3>เลือกดีบักเกอร์</h3><div class="cards">'+cards+'</div><div class="row" style="margin-top:0"><button class="btn" data-go="title">กลับ</button><button class="btn pri" data-go="start">เริ่มรัน ▶</button></div></div>','');
  selActive=true;
  onKey=c=>{if(c=='ArrowLeft'||c=='KeyA'){selCh=(selCh+2)%3;showSelect();return true}if(c=='ArrowRight'||c=='KeyD'){selCh=(selCh+1)%3;showSelect();return true}if(c=='Enter'||c=='Space'){GO.start();return true}if(c=='Escape'){showTitle();return true}}}
@@ -1432,7 +1432,7 @@ GO.ups=showUps;
 GO.buy=id=>{const u=UP.find(x=>x.id==id),l=SAVE.up[id];if(!u||l>=u.max)return;const c=u.cost(l);if(SAVE.cores<c)return;SAVE.cores-=c;SAVE.up[id]++;putSave();sfx('pick');showUps()};
 function showHow(){
  modal='menu';
- const K=[['W A S D / ลูกศร','เดินอิสระ 8 ทิศรอบสนาม'],['J / คลิกเมาส์','โจมตี กดต่อเนื่องเป็นคอมโบ เล็งศัตรูใกล้สุดอัตโนมัติ'],['Space / Shift','แดชไปทางที่เดิน หลบโจมตี (ตัวไม่โดนชั่วขณะ)'],['K / L','สกิลประจำตัว ใช้พลังงานสีฟ้า'],['H','ชุดซ่อมแซม ฟื้นเลือด 40%'],['Esc / P','หยุดเกม'],['M','ปิด/เปิดเสียง']];
+ const K=[['W A S D / ลูกศร','เดินอิสระ 8 ทิศรอบสนาม'],['J / F / คลิกเมาส์','โจมตี กดต่อเนื่องเป็นคอมโบ เล็งศัตรูใกล้สุดอัตโนมัติ'],['Space / Shift','แดชไปทางที่เดิน หลบโจมตี (ตัวไม่โดนชั่วขณะ)'],['Q / E','สกิลประจำตัว ใช้พลังงานสีฟ้า (หรือ K / L)'],['R','ชุดซ่อมแซม ฟื้นเลือด 40% (หรือ H)'],['Esc / P','หยุดเกม'],['M','ปิด/เปิดเสียง']];
  showOv('<div class="pn how"><h3>วิธีเล่น</h3><table>'+K.map(k=>'<tr><td>'+k[0]+'</td><td>'+k[1]+'</td></tr>').join('')+'</table><h5>ระบบเกม</h5><p>ฝ่า 20 ห้อง (10 โซน × 2 ห้อง: ห้องต่อสู้ + ห้องบอส) สนามเป็นมุมมองไอโซเมตริก เดินอิสระได้ทุกทิศ กำจัดไวรัสให้หมดห้อง เลือกเรลิก 1 จาก 3 ชิ้น แล้วเดินไปทางออกที่มุมขวาของสนาม เรลิกซ้ำกันสะสมเลเวลได้</p><p>บอสแต่ละตัวมีกลไกตามพฤติกรรมไวรัสจริง เช่น ร่างที่ฟื้นได้ของไวรัสหลายส่วน ร่างโคลนของไวรัสแปลงกาย สวิตช์ Cold Reboot ของไวรัสสิงแรม และดิสก์ Backup ของแรนซัมแวร์ ฉากเปิดตัวบอสจะบอกจุดอ่อนไว้ให้</p><p>หลังโค่นบอสจะได้อ่านข้อมูลไวรัสและตอบคำถาม ตอบถูกได้เรลิกระดับสูง ตอบผิดโซนถัดไปยากขึ้น ล้มเหลวหรือชนะจะได้คอร์ไปอัปเกรดถาวร ไวรัสที่โค่นได้จะปลดล็อกในสารานุกรมไวรัสที่หน้าหลัก</p><p>มือถือ: ลากจอยสติ๊กมุมซ้ายล่างเพื่อเดิน ปุ่มโจมตีกดค้างได้</p><div class="row"><button class="btn pri" data-go="title">กลับ</button></div></div>');
  onKey=c=>{if(c=='Escape'||c=='Enter'){showTitle();return true}}}
 GO.how=showHow;
@@ -1456,7 +1456,7 @@ function buildHud(){
  const C=CH[P.ci],pc=$('por'),x=pc.getContext('2d');x.imageSmoothingEnabled=false;x.clearRect(0,0,34,28);x.fillStyle='#16204a';x.fillRect(0,0,34,28);
  const G=g;g=x;FL=null;drawHero(P.ci,17,40,1,{m:'idle',t:0.2});g=G;
  const wi=C.id=='patch'?'sword':C.id=='daemon'?'dagger':'hammer';
- const defs=[['HL','plus','H','#6dff9a',0],['DS','dash','⇧','#cfe6ff',0],['S1',C.s1.ic,'K',C.col,0],['S2',C.s2.ic,'L',C.col,0],['A',wi,'','#ffe27a',1]];
+ const defs=[['HL','plus','R','#6dff9a',0],['DS','dash','␣','#cfe6ff',0],['S1',C.s1.ic,'Q',C.col,0],['S2',C.s2.ic,'E',C.col,0],['A',wi,'','#ffe27a',1]];
  $('sk').innerHTML=defs.map(d=>'<button class="slot k-'+d[0]+(d[4]?' t big':'')+'" data-a="'+d[0]+'">'+icoImg(d[1],d[3])+'<u></u><kbd>'+d[2]+'</kbd><em></em></button>').join('');
  SL={};$('sk').querySelectorAll('.slot').forEach(el=>{SL[el.dataset.a]={el,u:el.querySelector('u'),em:el.querySelector('em')};bindBtn(el)});
  hc={};$('hud').hidden=false}
