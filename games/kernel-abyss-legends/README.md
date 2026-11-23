@@ -32,3 +32,10 @@
 - สารานุกรมไวรัส ปลดล็อกเมื่อโค่นบอส พร้อมป้ายช่องทางการแพร่ (ต้องให้คนกด / แพร่เอง / หลบการตรวจจับ)
 - คำถามหลายข้อต่อไวรัส สุ่มทุกรอบ, ฉากเปิดบอสบอกจุดอ่อน, สรุปบทเรียนตอนชนะ
 - เซฟเวอร์ชันใหม่ ดึงคอร์และอัปเกรดจากเซฟเดิมมาให้อัตโนมัติ
+
+## เอฟเฟกต์ pixelfx
+เอฟเฟกต์พิกเซลบางส่วนมาจาก [pixelfx](https://github.com/patch-gg/pixelfx) (MIT License, Copyright (c) 2026 Patch, Copyright (c) 2026 Hugo Duprez) ดูสัญญาอนุญาตเต็มได้ที่ `LICENSE-pixelfx.txt`
+- ตีโดน: hit-spark (สีฟ้า) · คริติคอล: crit-hit · ฟ้าผ่าลูกโซ่: zap-hit
+- ระเบิดของศัตรูพิเศษและระเบิดของ Ransomware: plasma-explosion · บอสเข้าเฟส 2: implosion · บอสตาย: dark-explosion
+- บอสทุบพื้นและสกิล Sudo Slam: ground-slam · Cold Reboot และฟื้นคืนชีพ: emp-blast
+- ศัตรูพิเศษเกิดและประตูทางออกเปิด: spawn-portal · เก็บหัวใจ ชุดซ่อม Backup และเลือกเรลิก: collect-burst
