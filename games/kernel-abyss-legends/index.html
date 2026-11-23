@@ -369,7 +369,7 @@ const sfx=n=>{try{SFX[n]&&SFX[n]()}catch(e){}};
 const SCALES=[[0,3,5,7,10],[0,2,3,7,8],[0,3,5,6,10],[0,2,5,7,9],[0,1,5,7,8]],ROOTS=[45,42,43,44,46,41,47,40,42,40];
 const mf=n=>440*Math.pow(2,(n-69)/12);
 function musTick(){
- if(!AC||muted||!musOn)return;const s=mst++,sc=SCALES[mZ%5],r=ROOTS[mZ],bar=(s>>4)&3,bo=[0,0,5,3][bar];
+ if(!AC||muted||!musOn||(typeof BGM!='undefined'&&BGM.active))return;const s=mst++,sc=SCALES[mZ%5],r=ROOTS[mZ],bar=(s>>4)&3,bo=[0,0,5,3][bar];
  if(s%2==0)tone(mf(r+bo-12),.22,'triangle',mMode?.07:.05,0,0,MU);
  if(mMode>0||s%4==0)tone(mf(r+24+sc[(s*2+bar)%5]+(s%8>=4?12:0)),.1,'square',mMode==2?.022:.014,0,0,MU);
  if(mMode>0&&s%4==0)tone(110,.11,'sine',.09,-70,0,MU);
@@ -1279,7 +1279,7 @@ function updRoom(dt){
  else if(room.state=='open'){if(room.door&&Math.hypot(P.x-room.exit.x,P.y-room.exit.y)<24&&!room.leaving){room.leaving=1;doFade(()=>startRoom(run.idx+1))}}}
 function afterBoss(){
  P.kits=Math.min(4,P.kits+1);heal(P.mhp*.35);
- if(run.z>=9){playCS(endingCS(()=>endRun(true)));return}
+ if(run.z>=9){const c=endingCS(()=>endRun(true));c.kind='end';playCS(c);return}
  doFade(()=>startRoom(run.idx+1))}
 function endRun(win){
  const cores=Math.floor(run.kills/6)+run.idx*2+run.bosses*10+(win?50:0);
@@ -1587,6 +1587,33 @@ function drawSilDead(C,id,P,L,k,t){
  if(id=='patch'){P(hx-6,hy,13,1,C.ink);P(hx-4,hy-1,9,1,C.ink);P(hx-2,hy-2,5,1,C.ink)}else if(id=='daemon'){P(hx-3,hy-2,7,3,C.ink)}else{P(hx-5,hy,11,2,C.ink);P(hx-2,hy-3,5,3,C.ink)}
  L(-10,0,6,-1,WHT);if(k>=1&&Math.floor(t*3)%2)P(-2,-8,1,1,C.acc)}
 
+/* ================= soundtrack (audio/*.mp3) ================= */
+/* One looping track at a time, chosen from the game state, with a short crossfade. If a file cannot load
+   (e.g. the page was opened without its audio folder) the built-in synth music keeps playing instead. */
+const BGM={src:{title:'audio/title.mp3',corrupted:'audio/stage-corrupted.mp3',network:'audio/stage-network.mp3',boss:'audio/boss.mp3',final:'audio/final-boss.mp3',final2:'audio/final-boss-2.mp3',victory:'audio/victory.mp3',ending:'audio/ending.mp3'},
+ el:{},bad:{},cur:null,key:null,want:null,vol:.55,unlocked:false,fading:[]};
+function bgmGet(k){let a=BGM.el[k];if(!a){a=new Audio();a.preload='auto';a.loop=k!='victory'&&k!='ending';a.src=BGM.src[k];a.volume=0;a.addEventListener('error',()=>{BGM.bad[k]=1});BGM.el[k]=a}return a}
+function bgmKey(){
+ if(CS){if(CS.kind=='boss')return room&&room.z==9?'final':'boss';if(CS.kind=='end')return 'ending';return 'title'}
+ if(state=='title')return 'title';
+ if(state=='end')return run&&SAVE&&modal=='end'&&$('ov').querySelector('.end.win')?'ending':null;
+ if(!room)return 'title';
+ if(room.type=='boss'){if(room.state=='bossdie'||room.state=='quiz'||modal=='kn'||modal=='pick')return 'victory';const b=room.boss;return room.z==9?(b&&b.p2?'final2':'final'):'boss'}
+ return [0,1,2,7].includes(room.z)?'corrupted':'network'}
+function bgmTick(dt){
+ const k=bgmKey();
+ if(k!==BGM.key){
+  if(BGM.cur){BGM.fading.push(BGM.cur)}BGM.cur=null;BGM.key=k;
+  if(k&&!BGM.bad[k]){const a=bgmGet(k);try{a.currentTime=0}catch(e){}BGM.cur=a;if(BGM.unlocked)a.play().catch(()=>{})}}
+ const target=muted||document.hidden?0:BGM.vol;
+ if(BGM.cur){const a=BGM.cur;a.muted=muted;a.volume=Math.min(1,Math.max(0,a.volume+(target-a.volume)*Math.min(1,dt*2.5)));if(BGM.unlocked&&a.paused&&!a.ended&&target>0)a.play().catch(()=>{})}
+ for(const a of BGM.fading){a.volume=Math.max(0,a.volume-dt*1.2);if(a.volume<=0){a.pause()}}
+ BGM.fading=BGM.fading.filter(a=>a.volume>0);
+ // the synth score only plays when no file track is available
+ BGM.active=!!(BGM.cur&&!BGM.bad[BGM.key])||(BGM.key&&!BGM.bad[BGM.key])}
+function bgmUnlock(){if(BGM.unlocked)return;BGM.unlocked=true;if(BGM.cur)BGM.cur.play().catch(()=>{})}
+addEventListener('pointerdown',bgmUnlock);addEventListener('keydown',bgmUnlock);addEventListener('touchend',bgmUnlock,{passive:true});
+
 /* ================= overlay / screens ================= */
 const ov=$('ov'),GO={};
 let qzQ=null,selCh=0,selActive=false,pickCb=null,pickList=null,qzOrder=[],qzOk=false,storyI=0,storyTimer=0,storyNext=null;
@@ -1696,7 +1723,7 @@ function showZoneCard(z){
  showOv('<div class="pn" style="width:calc(var(--u)*290)"><small class="k">ZONE '+(z+1)+' / 10 · '+K.bn.toUpperCase()+'</small><h3>'+K.zn+' <i>'+K.zs+'</i></h3><div class="zmap">'+mp+'</div>'+tagH(K)+'<p>'+K.l+'</p><p style="color:#9fb4d9">'+K.nar+'</p>'+(room.elite?'<p style="color:#ff9a9a">⚠ โซนนี้มีศัตรูพิเศษ (ELITE) ในคลื่นสุดท้าย</p>':'')+'<div class="row"><button class="btn pri" data-go="zoneGo">เข้าสู่โซน ▶</button></div></div>');
  onKey=c=>{if(c=='Enter'||c=='Space'||c=='KeyJ'){GO.zoneGo();return true}}}
 GO.zoneGo=()=>{hideOv();modal=null;mMode=1;room.state='fight';spawnWave();for(const k in held)held[k]=false};
-function startCine(z){cine={t:0,z};mMode=0;playCS(bossCS(z,endCine))}
+function startCine(z){cine={t:0,z};mMode=0;const c=bossCS(z,endCine);c.kind='boss';playCS(c)}
 function hideCine(){const el=$('cine');el.hidden=true;el.innerHTML=''}
 
 /* ================= boss knowledge + quiz + reward ================= */
@@ -1763,7 +1790,7 @@ function render(){
 function frame(ts){
  requestAnimationFrame(frame);
  const dt=Math.min(.033,Math.max(0,(ts-lastT)/1000||0));lastT=ts;
- try{update(dt);render();if(state=='play')hudUpdate();if(selActive)drawSelCards()}catch(e){console.error(e)}
+ try{update(dt);render();bgmTick(dt);if(state=='play')hudUpdate();if(selActive)drawSelCards()}catch(e){console.error(e)}
  for(const k in hit)hit[k]=0}
 (function(){const st=$('stk'),kn=st.querySelector('i');let pid=null;
  const set=e=>{const r=st.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2,rad=r.width/2;let dx=(e.clientX-cx)/rad,dy=(e.clientY-cy)/rad;if(ROT){const t=dx;dx=dy;dy=-t}const l=Math.hypot(dx,dy);if(l>1){dx/=l;dy/=l}joy.x=Math.abs(dx)<.15?0:dx;joy.y=Math.abs(dy)<.15?0:dy;kn.style.transform='translate('+(dx*60)+'%,'+(dy*60)+'%)'};
