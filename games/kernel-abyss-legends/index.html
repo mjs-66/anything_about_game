@@ -1599,6 +1599,7 @@ function bgmKey(){
  if(state=='end')return run&&SAVE&&modal=='end'&&$('ov').querySelector('.end.win')?'ending':null;
  if(!room)return 'title';
  if(room.type=='boss'){if(room.state=='bossdie'||room.state=='quiz'||modal=='kn'||modal=='pick')return 'victory';const b=room.boss;return room.z==9?(b&&b.p2?'final2':'final'):'boss'}
+ if(room.state=='clear'||room.state=='reward'||room.state=='open')return 'title';
  return [0,1,2,7].includes(room.z)?'corrupted':'network'}
 function bgmTick(dt){
  const k=bgmKey();
