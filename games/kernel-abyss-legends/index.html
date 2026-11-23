@@ -849,7 +849,7 @@ function renderWorld(){
  if(room.twins&&!room.twins[0].dead&&!room.twins[1].dead){const[a,b2]=room.twins;g.globalAlpha=.5;for(let i=0;i<=16;i++){if((i+Math.floor(gt*12))%3==0)continue;const q=pj(lerp(a.x,b2.x,i/16),lerp(a.y,b2.y,i/16),lerp(a.alt+a.h/2,b2.alt+b2.h/2,i/16)+Math.sin(gt*6+i)*2);px(q[0],q[1],2,2,'#e879f9')}g.globalAlpha=1}
  for(const e of E)if(e.boss&&e.revT>0){const q=pj(e.x,e.y,e.alt+e.h+20);txt(Math.ceil(e.revT),q[0],q[1],'#e879f9',10)}
  drawProj();vfxDraw();drawFX();
- for(const[t,c,lb]of[[room.sw,'#c7d2fe','REBOOT'],[room.bk,'#7dd3fc','BACKUP'],[room.door?room.exit:null,'#35e0ff','EXIT']]){if(!t)continue;const q=pj(t.x,t.y,10);if(q[0]>8&&q[0]<W-8&&q[1]>30&&q[1]<H-8)continue;const ax=cl(q[0],14,W-14),ay=cl(q[1],40,H-14),a=Math.atan2(q[1]-ay,q[0]-ax),bb=Math.sin(gt*8)*2;g.fillStyle=c;for(let i=0;i<6;i++){const w=6-i;g.fillRect(Math.round(ax+Math.cos(a)*(i+bb)-w/2),Math.round(ay+Math.sin(a)*(i+bb)-w/2),w,w)}txt(lb,ax-Math.cos(a)*12,ay-Math.sin(a)*12,c,5)}
+ for(const[t,c,lb]of[[room.boss&&!room.boss.dead&&!room.boss.hide&&room.state=='boss'?{x:room.boss.x,y:room.boss.y}:null,'#ff4d6d','BOSS'],[room.sw,'#c7d2fe','REBOOT'],[room.bk,'#7dd3fc','BACKUP'],[room.door?room.exit:null,'#35e0ff','EXIT']]){if(!t)continue;const q=pj(t.x,t.y,10);if(q[0]>8&&q[0]<W-8&&q[1]>30&&q[1]<H-8)continue;const ax=cl(q[0],14,W-14),ay=cl(q[1],40,H-14),a=Math.atan2(q[1]-ay,q[0]-ax),bb=Math.sin(gt*8)*2;g.fillStyle=c;for(let i=0;i<6;i++){const w=6-i;g.fillRect(Math.round(ax+Math.cos(a)*(i+bb)-w/2),Math.round(ay+Math.sin(a)*(i+bb)-w/2),w,w)}txt(lb,ax-Math.cos(a)*12,ay-Math.sin(a)*12,c,5)}
  g.restore();
  if(room.dark>0&&P){const a=Math.min(.94,room.dark*1.6);g.save();g.fillStyle='rgba(0,2,8,'+a+')';g.beginPath();g.rect(0,0,W,H);g.arc(PSX,PSY-14,50,0,6.2832,true);const b=room.boss;if(b&&!b.dead){const q=pj(b.x,b.y,b.alt+44);g.moveTo(q[0]+12,q[1]);g.arc(q[0],q[1],12,0,6.2832,true)}g.fill('evenodd');g.restore()}
  if(P&&P.hp/P.mhp<.3&&!P.dead){const a=(.18+.12*Math.sin(gt*6))*(1-P.hp/P.mhp/.3*.6);g.fillStyle='rgba(255,20,40,'+a+')';g.fillRect(0,0,W,6);g.fillRect(0,H-6,W,6);g.fillRect(0,0,6,H);g.fillRect(W-6,0,6,H)}
@@ -1240,7 +1240,7 @@ function startRoom(idx){
  const rg=rng(idx*97+3+z);for(let e=0;e<4;e++){const far=e==0||e==3;for(let t=-Rr+10;t<Rr;t+=46+rg()*40){const o=Rr+24+rg()*18,s=far?9+rg()*12:5+rg()*5,h=far?36+rg()*80:4+rg()*8;room.bp.push(e==0?{x:t,y:-o,s,h}:e==1?{x:o,y:t,s,h}:e==2?{x:t,y:o,s,h}:{x:-o,y:t,s,h})}}
  room.fl=mkFloor(z,Rr,idx*31+z*7+1);
  E=[];PR=[];HZ=[];PT=[];DN=[];PU=[];SQ=[];
- P.x=sp.x;P.y=sp.y;P.vx=0;P.vy=0;P.st='idle';P.inv=1;P.ax=.7;P.ay=-.7;P.face=1;P.hits=new Set();P.lx=P.x;P.ly=P.y;cam.x=cl(P.x,-Rr*.55,Rr*.55);cam.y=cl(P.y,-Rr*.55,Rr*.55);P.fw=0;P.lock={};
+ P.x=sp.x;P.y=sp.y;P.vx=0;P.vy=0;P.st='idle';P.inv=1;P.ax=.7;P.ay=-.7;P.face=1;P.hits=new Set();P.lx=P.x;P.ly=P.y;cam.x=P.x;cam.y=P.y;P.fw=0;P.lock={};
  mZ=z;musOn=true;mMode=1;VFX.list=[];
  room.waves=type=='boss'?[]:makeWaves();
  updateHudRoom();
@@ -1316,7 +1316,7 @@ function update(dt){
  updRoom(dt);updPlayer(dt);
  for(const e of E)updE(e,dt);
  E=E.filter(e=>!e.dead||e.boss);updSQ(dt);updPR(dt);updHZ(dt);updPU(dt);updFX(dt);vfxUpd(dt);
- let tx=P.x+P.ax*18,ty=P.y+P.ay*18;const bb=room.boss;if(bb&&!bb.dead&&!bb.hide&&!bb.free&&room.state=='boss'){tx=lerp(tx,bb.x,.4);ty=lerp(ty,bb.y,.4)}if(room.state=='bossdie'){const d=room.dieAt||room.boss;tx=lerp(tx,d.x,.6);ty=lerp(ty,d.y,.6)}const cm=room.R*.55;tx=cl(tx,-cm,cm);ty=cl(ty,-cm,cm);cam.x+=(tx-cam.x)*Math.min(1,dt*7);cam.y+=(ty-cam.y)*Math.min(1,dt*7);
+ let tx=P.x+P.ax*10,ty=P.y+P.ay*10;if(room.state=='bossdie'){const d=room.dieAt||room.boss;tx=lerp(tx,d.x,.5);ty=lerp(ty,d.y,.5)}const ck=Math.min(1,dt*12);cam.x+=(tx-cam.x)*ck;cam.y+=(ty-cam.y)*ck;
  if(P.dead&&P.dT>1.5&&state=='play')endRun(false);
  tutUpd()}
 
