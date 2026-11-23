@@ -1483,6 +1483,7 @@ function drawHero(ci,x,y,f,a){
  else if(m=='dead'){dead=Math.min(1,t/.7)}
  else if(m=='atk'&&a.cf){const cf=a.cf,pr=a.p||0;if(pr<cf.h0){wpn='back';crouch=1;lean=-1;wk=pr/cf.h0}else if(pr<=cf.h1+.15){wpn='out';lunge=2;lean=2;scarf=3;wk=Math.min(1,(pr-cf.h0)/(cf.h1-cf.h0))}else{wpn='out2';wk=1}}
  const P=(dx,dy,w,h,c)=>px(F>0?x+dx:x-dx-w+1,y+dy,w,h,c);
+ const SW=(m=='atk'&&a.cf&&wpn!='back')?silArc(id,a,x,y,F):null;
  const L=(x0,y0,x1,y1,c,th)=>lnpx(x+F*x0,y+y0,x+F*x1,y+y1,c,th||1);
  if(dead){drawSilDead(C,id,P,L,dead,t);return}
  const by=-bob+crouch,ox=lean+lunge;
@@ -1522,14 +1523,15 @@ function drawHero(ci,x,y,f,a){
    if(wpn=='rest')L(hx2,hy2,hx2+9,-3+by,WHT);
    else if(wpn=='back')L(hx2-2,hy2-2,hx2-12,hy2+3,WHT);
    else if(wpn=='up')L(hx2,hy2,hx2+2,hy2-14,WHT,2);
+   else if(SW){const sx=x+F*hx2,sy=y+hy2,dx=SW.lx-sx,dy=SW.ly-sy,l=Math.hypot(dx,dy)||1;lnpx(sx,sy,sx+dx/l*13,sy+dy/l*13,WHT,1);lnpx(sx+F*.5,sy+1,sx+dx/l*12+F*.5,sy+dy/l*12+1,'#c9d6f0',1)}
    else if(wpn=='out'||wpn=='out2')L(hx2,hy2,hx2+11,hy2+1,WHT);
    if(!FL)P(hx2,hy2,1,1,C.acc)}
   else if(id=='daemon'){ // twin kunai
    const k=(px0,py0,dx,dy)=>{L(px0,py0,px0+dx,py0+dy,WHT);P(px0,py0,1,1,C.acc)};
    if(wpn=='rest'){k(hx2,hy2+1,4,3);k(-hx2-1,hy2+1,-3,3)}else if(wpn=='back'){k(hx2-3,hy2,-5,-2);k(-hx2,hy2+1,-4,2)}
-   else if(wpn=='up'){k(hx2,hy2,2,-6);k(-hx2,hy2,-2,-6)}else{k(hx2,hy2,6,0);k(hx2-1,hy2+2,5,2)}}
+   else if(wpn=='up'){k(hx2,hy2,2,-6);k(-hx2,hy2,-2,-6)}else if(SW){for(const o of[0,2]){const sx=x+F*(hx2-o),sy=y+hy2+o,dx=SW.lx-sx,dy=SW.ly-sy,l=Math.hypot(dx,dy)||1;lnpx(sx,sy,sx+dx/l*7,sy+dy/l*7,WHT,1);px(sx,sy,1,1,C.acc)}}else{k(hx2,hy2,6,0);k(hx2-1,hy2+2,5,2)}}
   else{ // maul
-   let ex,ey;if(wpn=='rest'){ex=hx2-9;ey=hy2-8}else if(wpn=='back'){ex=hx2-9;ey=hy2-7}else if(wpn=='up'){ex=hx2;ey=hy2-13}else{ex=hx2+10;ey=hy2+6}
+   let ex,ey;if(wpn=='rest'){ex=hx2-9;ey=hy2-8}else if(wpn=='back'){ex=hx2-9;ey=hy2-7}else if(wpn=='up'){ex=hx2;ey=hy2-13}else if(SW){const sx=x+F*hx2,sy=y+hy2,dx=SW.lx-sx,dy=SW.ly-sy,l=Math.hypot(dx,dy)||1;ex=(sx+dx/l*12-x)*F;ey=sy+dy/l*12-y}else{ex=hx2+10;ey=hy2+6}
    L(hx2,hy2,ex,ey,WG,1);P(ex-3,ey-2,6,5,WHT);P(ex-3,ey+2,6,1,WG);if(!FL)P(ex-3,ey-2,6,1,C.acc2)}};
  if(wB)drawW();
  const H=body();
@@ -1540,9 +1542,32 @@ function drawHero(ci,x,y,f,a){
  if(!FL){const sx0=H.hx+(B?2:-3),sy=H.top+1-bob+crouch,len=3+scarf*2;for(let i=0;i<len;i++){const wv=Math.round(Math.sin(t*10+i*.9));P(sx0-i,sy+Math.min(i,2)+(scarf>1?0:i>>1)+(i>1?wv:0),1,1,i%2?C.acc:C.acc2)}}
  if(!wB)drawW();
  // swing streak: a long white blade of light along the attack direction
- if(m=='atk'&&wpn!='back'&&!FL){const cf=a.cf,pr=a.p||0,k=pr<=cf.h1?wk:Math.max(0,1-(pr-cf.h1)/.18);if(k>0)silStreak(id,C,x,y-10+by,v,cf,pr<=cf.h1?wk:1,pr<=cf.h1?1:k,a.step)}
+ if(SW&&!FL)silArcDraw(id,C,SW);
  if(m=='skill'&&a.fw&&!FL)ringpx(x,y-12,16+Math.sin(t*10)*1.5,C.acc,2);
  if(m=='skill'&&!FL){g.globalAlpha=.5+.3*Math.sin(t*20);P(3+ox,-26+by,2,2,C.acc2);g.globalAlpha=1}}
+/* the swing: a crescent around the hero on the floor plane, sized to the real hit reach and cone */
+function silArc(id,a,x,y,F){
+ const cf=a.cf,pr=a.p||0,n=CH[[ 'patch','daemon','root'].indexOf(id)].st.length,fin=a.step==n-1;
+ const dir=a.dir!=null?a.dir:(F>0?-.35:Math.PI/2+.35),cone=cf.big?1.9:1.3,R=cf.r+(id=='daemon'?10:15);
+ const rev=(a.step%2==1),s0=dir+(rev?-cone:cone),s1=dir+(rev?cone:-cone);
+ let lead,alpha=1;const sw=(pr-cf.h0)/(cf.h1-cf.h0);
+ if(pr<=cf.h1)lead=ease(Math.max(0,Math.min(1,sw)));else{lead=1;alpha=Math.max(0,1-(pr-cf.h1)/.2)}
+ const H=id=='root'?6:11,pt=(th,r)=>{const wx=Math.cos(th)*r,wy=Math.sin(th)*r;return[x+(wx-wy),y-H+(wx+wy)*.5]};
+ const th=lerp(s0,s1,lead),lp=pt(th,R);
+ return{s0,s1,lead,alpha,R,pt,lx:lp[0],ly:lp[1],fin,big:cf.big,x,y,H}}
+function silArcDraw(id,C,S){
+ if(S.alpha<=0||S.lead<=0)return;
+ const span=S.lead,steps=Math.max(10,Math.round(Math.abs(S.s1-S.s0)*S.R*span*.9)),thick=(id=='root'?8:id=='daemon'?4:7)*(S.big?1.3:1);
+ g.globalAlpha=S.alpha;
+ // tail fades out behind the leading edge
+ for(let i=0;i<=steps;i++){const k=i/steps,u=k*span,th=lerp(S.s0,S.s1,u),tail=span-u,keep=tail<.75,w=keep?Math.max(1,thick*(1-tail/.75)):0;if(!w)continue;
+  for(let j=0;j<w;j++){const r=S.R-j*.75,q=S.pt(th,r),edge=j==0,inner=j>=w-1&&w>1;g.fillStyle=edge?C.acc2:inner?C.acc:WHT;g.fillRect(Math.round(q[0]),Math.round(q[1]),2,1)}}
+ // bright head of the cut, plus a few sparks thrown off it
+ const hd=S.pt(lerp(S.s0,S.s1,span),S.R-1);g.fillStyle='#fff';g.fillRect(Math.round(hd[0])-1,Math.round(hd[1])-1,3,3);
+ if(S.lead<1){g.fillStyle=C.acc;for(let i=0;i<4;i++){const q=S.pt(lerp(S.s0,S.s1,span)+(i-1.5)*.08,S.R+2+i*2);g.fillRect(Math.round(q[0]),Math.round(q[1]),1,1)}}
+ if(id=='daemon'&&S.lead>.3){const th2=lerp(S.s1,S.s0,span*.85);for(let r=S.R*.35;r<S.R;r+=1){const q=S.pt(th2,r);g.fillStyle=r>S.R-3?C.acc2:WHT;g.fillRect(Math.round(q[0]),Math.round(q[1]),1,1)}}
+ if(id=='root'&&S.lead>.8){g.fillStyle=C.acc;const q=S.pt(lerp(S.s0,S.s1,span),S.R);for(let i=0;i<6;i++)g.fillRect(Math.round(q[0]+(i-3)*2),Math.round(S.y)+(i%2),2,1)}
+ g.globalAlpha=1}
 function silStreak(id,C,x,y,v,cf,grow,alpha,step){
  let dx=v.sx,dy=v.sy*.5;const l=Math.hypot(dx,dy)||1;dx/=l;dy/=l;const nx=-dy,ny=dx;
  const len=(id=='root'?46:id=='daemon'?30:58)*(cf.big?1.25:1)*grow,back=8,th=id=='root'?6:id=='daemon'?3:4;
