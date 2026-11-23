@@ -212,6 +212,7 @@ body.touch #pad{display:flex}
 #cst.boss h3{font:700 calc(var(--u)*8) var(--tx)}
 #cst h3.ok{color:var(--ok)}
 #cst p{margin:calc(var(--u)*4) 0 0;font:700 calc(var(--u)*5.6) var(--tx);color:#bff6ff;letter-spacing:.06em;text-shadow:0 1px 0 #000}
+#cst p.warn{color:#ff9aa8;font-size:calc(var(--u)*5)}#cst p.go{margin-top:calc(var(--u)*6);font:calc(var(--u)*4.6) var(--px);color:var(--gold);animation:bl 1s steps(2) infinite}#cst.boss{background:linear-gradient(rgba(3,5,14,.82),rgba(3,5,14,.55));padding:calc(var(--u)*5) calc(var(--u)*10)}
 #cst p.fn{font:calc(var(--u)*6) var(--px);color:#cdd8f5;letter-spacing:.1em}
 #cst small{display:block;font:calc(var(--u)*5) var(--px);letter-spacing:.2em;color:var(--hot)}
 .gl{animation:gl 1.6s steps(1) infinite}
@@ -1343,10 +1344,13 @@ function endCS(){
  const c=CS;if(!c)return;CS=null;try{window.speechSynthesis&&speechSynthesis.cancel()}catch(e){}
  $('cs').hidden=true;$('cst').innerHTML='';csSub(null);$('hud').hidden=c.hudWas;musOn=true;if(c.onEnd)c.onEnd()}
 function csUpd(dt){
- const c=CS;c.t+=dt;for(const e of c.ev)if(!e[2]&&c.t>=e[0]){e[2]=1;e[1]()}
+ const c=CS,want=csSkip||hit.A||hit.S1||hit.DS,holding=c.hold!=null&&!c.rel;
+ // a scene with a hold point stops there until the player presses a button; skipping jumps to the hold
+ if(holding){if(c.t>=c.hold){c.holdT=(c.holdT||0)+dt;if(want&&c.holdT>.5){c.rel=1;sfx('ui');const g2=$('cst').querySelector('.go');if(g2)g2.remove()}}else if(want&&c.t>c.skipAt)c.t=c.hold-.001}
+ if(!(c.hold!=null&&!c.rel&&c.t>=c.hold))c.t+=dt;for(const e of c.ev)if(!e[2]&&c.t>=e[0]){e[2]=1;e[1]()}
  for(const p of c.P){p.t+=dt;p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=(p.g||0)*dt}c.P=c.P.filter(p=>p.t<p.l);if(c.P.length>700)c.P.splice(0,c.P.length-700);
  if(c.upd)c.upd(dt,c.t);
- if(c.t>=c.dur||(csSkip&&c.t>c.skipAt)||(c.t>c.skipAt&&(hit.A||hit.S1||hit.DS)))endCS();csSkip=0}
+ if(c.t>=c.dur||(c.hold==null&&want&&c.t>c.skipAt))endCS();csSkip=0}
 function csP(x,y,vx,vy,l,c,s,g){CS.P.push({x,y,vx,vy,l,t:0,c,s:s||2,g:g||0})}
 function csDrawP(){for(const p of CS.P){g.globalAlpha=Math.max(0,1-p.t/p.l);g.fillStyle=p.c;g.fillRect(Math.round(p.x),Math.round(p.y),p.s,p.s)}g.globalAlpha=1}
 function bars(k){const h=Math.round(30*k);g.fillStyle='#000';g.fillRect(0,0,W,h);g.fillRect(0,H-h,W,h)}
@@ -1410,9 +1414,9 @@ function bossCS(z,onEnd){
  const ev=[[.1,()=>sfx('door')],[.9,()=>{sfx('boom');shake=6}],[1.2,()=>sfx('warn')],[1.5,()=>sfx('warn')],[1.8,()=>sfx('warn')],[2.1,()=>sfx('warn')],
   [2.4,()=>sfx('roar')],[4.4,()=>{sfx('roar');sfx('boom');shake=12;CS.sw=0}],
   [4.6,()=>{csSub('"'+K.b+'"','"'+BOSS_LINE+'"');say(BOSS_LINE,{pitch:.05,rate:.78})}],
-  [5.6,()=>csSub(null)],[5.6,()=>csTitle('<small>'+K.ee+'</small><h2>'+K.bn.toUpperCase()+'</h2><h3>'+K.th+' · '+K.te+'</h3><p>จุดอ่อน: '+K.weak+'</p>','boss')],
+  [5.6,()=>csSub(null)],[5.6,()=>csTitle('<small>'+K.ee+'</small><h2>'+K.bn.toUpperCase()+'</h2><h3>'+K.th+' · '+K.te+'</h3><p class="warn">⚠ '+K.s+'</p><p>จุดอ่อน: '+K.weak+'</p><p class="go">กด Enter / J หรือแตะจอ เพื่อเริ่มต่อสู้ ▶</p>','boss')],
   [7.6,()=>{csTitle('','');csSub(null);sfx('dash')}]];
- return{dur:8.6,ev,onEnd,skipAt:1.2,sw:-1,
+ return{dur:8.6,hold:6.4,ev,onEnd,skipAt:1.2,sw:-1,
   upd(dt,t){if(t>2.4&&t<4.6){for(let i=0;i<2;i++)csP(W/2+rnd(-60,60),H*.75,rnd(-20,20),rnd(-40,-15),rnd(1,2),R()<.6?'#111':'#2a0a10',ri(4,8));if(R()<.5)csP(W/2+rnd(-50,50),rnd(60,200),rnd(-10,10),rnd(-30,-5),rnd(.4,.9),'#ff2a4a',2)}if(CS.sw>=0)CS.sw+=dt},
   draw(){const t=CS.t,fy=Math.round(H*.74);g.fillStyle=mix(Z.s0,'#000000',.4);g.fillRect(0,0,W,H);
    const lights=4-Math.min(4,Math.floor(seg(t,1.1,2.3)*4.01));for(let i=0;i<4;i++){const x=70+i*113;if(i<lights){glow(x,0,90,Z.c,.35);g.globalAlpha=.12;g.fillStyle=Z.c;g.beginPath();g.moveTo(x-6,0);g.lineTo(x+6,0);g.lineTo(x+40,fy);g.lineTo(x-40,fy);g.fill();g.globalAlpha=1}px(x-6,0,12,4,i<lights?'#fff':'#222')}
