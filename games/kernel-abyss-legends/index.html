@@ -9,7 +9,7 @@
 /* Layout: one 16:9 pixel stage (480x270 canvas) with DOM HUD and menus laid over it, all sized from --u (stage height / 270). */
 :root{color-scheme:dark;--bg:#05060c;--ink:#e9f1ff;--mut:#8f9cc0;--ac:#35e0ff;--hot:#ff4d8d;--gold:#ffd24a;--pn:#0b1124;--ln:#33407f;--ok:#4ade80;--bad:#ff5a5a;
  --px:'Press Start 2P',ui-monospace,monospace;--tx:'Chakra Petch','Tahoma','Noto Sans Thai',system-ui,sans-serif}
-*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
 html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);overflow:hidden;font-family:var(--tx);touch-action:none;overscroll-behavior:none}
 #wrap{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(100vw,177.78vh);height:min(56.25vw,100vh);overflow:hidden;background:#000;--u:2px;--fs:max(11px,calc(var(--u)*5.6));font-size:calc(var(--u)*6)}
 #cv{position:absolute;inset:0;width:100%;height:100%;image-rendering:pixelated;image-rendering:crisp-edges;image-rendering:pixelated;display:block}
@@ -261,14 +261,14 @@ let SAVE={cores:0,up:{hp:0,atk:0,en:0,kit:0,rel:0,rev:0},best:0,wins:0,runs:0,tu
 function loadSave(){try{let s=JSON.parse(localStorage.getItem(SK)||'null');if(!s){const o=JSON.parse(localStorage.getItem(SK1)||'null');if(o)s={cores:o.cores||0,up:o.up||{},tut:o.tut||0,intro:0,muted:o.muted||0}}if(s){const u=Object.assign({},SAVE.up,s.up||{});SAVE=Object.assign(SAVE,s);SAVE.up=u}}catch(e){}}
 function putSave(){try{localStorage.setItem(SK,JSON.stringify(SAVE))}catch(e){}}
 loadSave();
-function fit(){const vv=window.visualViewport,w=Math.round(vv&&vv.width||innerWidth),h=Math.round(vv&&vv.height||innerHeight),s=Math.min(w/16,h/9),ww=Math.floor(s*16),hh=Math.floor(s*9);wrap.style.width=ww+'px';wrap.style.height=hh+'px';wrap.style.setProperty('--u',(hh/270)+'px');$('rot').style.display=(h>w*1.15)?'flex':'none'}
+let ROT=0;function fit(){const vv=window.visualViewport,w=Math.round(vv&&vv.width||innerWidth),h=Math.round(vv&&vv.height||innerHeight);ROT=h>w*1.15?1:0;const w2=ROT?h:w,h2=ROT?w:h,s=Math.min(w2/16,h2/9),ww=Math.floor(s*16),hh=Math.floor(s*9);wrap.style.width=ww+'px';wrap.style.height=hh+'px';wrap.style.transform='translate(-50%,-50%)'+(ROT?' rotate(90deg)':'');wrap.style.setProperty('--u',(hh/270)+'px');$('rot').style.display='none'}
 addEventListener('resize',fit);addEventListener('orientationchange',()=>{fit();setTimeout(fit,200)});if(window.visualViewport)visualViewport.addEventListener('resize',fit);fit();[60,250,700,1500].forEach(t=>setTimeout(fit,t));
 
 /* ================= audio ================= */
 let AC=null,MG=null,SG=null,MU=null,NB=null,muted=!!SAVE.muted,musOn=false,mst=0,mZ=0,mMode=0;
 function ac(){
- if(AC){if(AC.state=='suspended')AC.resume();return}
- try{AC=new(window.AudioContext||window.webkitAudioContext)();MG=AC.createGain();MG.gain.value=muted?0:1;MG.connect(AC.destination);
+ if(AC){if(AC.state!='running')AC.resume();return}
+ try{AC=new(window.AudioContext||window.webkitAudioContext)();try{const sb=AC.createBufferSource();sb.buffer=AC.createBuffer(1,1,22050);sb.connect(AC.destination);sb.start(0);AC.resume()}catch(_){}MG=AC.createGain();MG.gain.value=muted?0:1;MG.connect(AC.destination);
   SG=AC.createGain();SG.gain.value=.9;SG.connect(MG);MU=AC.createGain();MU.gain.value=.55;MU.connect(MG);
   NB=AC.createBuffer(1,AC.sampleRate,AC.sampleRate);const d=NB.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;
   setInterval(musTick,125)}catch(e){AC=null}
@@ -1559,13 +1559,13 @@ function frame(ts){
  try{update(dt);render();if(state=='play')hudUpdate();if(selActive)drawSelCards()}catch(e){console.error(e)}
  for(const k in hit)hit[k]=0}
 (function(){const st=$('stk'),kn=st.querySelector('i');let pid=null;
- const set=e=>{const r=st.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2,rad=r.width/2;let dx=(e.clientX-cx)/rad,dy=(e.clientY-cy)/rad;const l=Math.hypot(dx,dy);if(l>1){dx/=l;dy/=l}joy.x=Math.abs(dx)<.15?0:dx;joy.y=Math.abs(dy)<.15?0:dy;kn.style.transform='translate('+(dx*60)+'%,'+(dy*60)+'%)'};
+ const set=e=>{const r=st.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2,rad=r.width/2;let dx=(e.clientX-cx)/rad,dy=(e.clientY-cy)/rad;if(ROT){const t=dx;dx=dy;dy=-t}const l=Math.hypot(dx,dy);if(l>1){dx/=l;dy/=l}joy.x=Math.abs(dx)<.15?0:dx;joy.y=Math.abs(dy)<.15?0:dy;kn.style.transform='translate('+(dx*60)+'%,'+(dy*60)+'%)'};
  const end=()=>{pid=null;joy.x=joy.y=0;kn.style.transform=''};
  st.addEventListener('pointerdown',e=>{ac();document.body.classList.add('touch');e.preventDefault();pid=e.pointerId;try{st.setPointerCapture(pid)}catch(_){}set(e)});
  st.addEventListener('pointermove',e=>{if(e.pointerId===pid)set(e)});st.addEventListener('pointerup',end);st.addEventListener('pointercancel',end);st.addEventListener('lostpointercapture',end)})();
 cv.addEventListener('pointerdown',e=>{if(e.pointerType!='mouse'||e.button!==0)return;if(state=='play'&&!modal)setAct('A',true)});
 addEventListener('pointerup',e=>{if(e.pointerType=='mouse')setAct('A',false)});
-addEventListener('pointerdown',ac);
+addEventListener('pointerdown',ac);addEventListener('touchend',ac,{passive:true});addEventListener('click',ac);
 $('cs').addEventListener('click',()=>{csSkip=1});
 showTitle();requestAnimationFrame(frame);
 </script>
