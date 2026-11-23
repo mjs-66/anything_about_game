@@ -1463,9 +1463,9 @@ function endingCS(onEnd){
 /* Minimal ink silhouettes with a white weapon and one accent colour each. Two 3/4 views (front-facing and
    back-facing) mirrored left/right give four facings; the swing is a long white streak along the attack. */
 const SIL={
- patch:{ink:'#0b0d15',ink2:'#1b2032',rim:'#1f5d78',acc:'#35e0ff',acc2:'#bff6ff'},
- daemon:{ink:'#0d0812',ink2:'#21142c',rim:'#5e1f48',acc:'#ff4d8d',acc2:'#ffc2da'},
- root:{ink:'#110c08',ink2:'#2a1e14',rim:'#6e4a12',acc:'#ffb02e',acc2:'#ffe9a8'}};
+ patch:{ink:'#0f4c7a',rim:'#0f4c7a',acc:'#35e0ff',acc2:'#bff6ff',coat:'#1c7bb8',coat2:'#0f4c7a',coatL:'#3a9ad6',pants:'#12304a',boot:'#35e0ff',hair:'#eafcff',hair2:'#a9c7da',skin:'#f6d2b0'},
+ daemon:{ink:'#2a1140',rim:'#2a1140',acc:'#ff4d8d',acc2:'#ffc2da',coat:'#43205f',coat2:'#2a1140',coatL:'#5e3284',pants:'#1a0b26',boot:'#ff4d8d',hood:'#2b0f3a',hood2:'#5e3284',skin:'#cf9f84'},
+ root:{ink:'#9a4c0e',rim:'#9a4c0e',acc:'#ffb02e',acc2:'#ffe9a8',coat:'#d9731f',coat2:'#9a4c0e',coatL:'#f0923e',pants:'#5c2f0a',boot:'#7a4a14',helm:'#d9731f',helm2:'#ffb02e',visor:'#190d05'}};
 const WHT='#f4f7ff',WG='#9aa3b8';
 function silView(a,f){
  if(a&&a.dir!=null){const c=Math.cos(a.dir),s=Math.sin(a.dir),sx=c-s,sy=c+s;return{back:sy<-.25,f:Math.abs(sx)<.2?f:(sx>0?1:-1),sx,sy}}
@@ -1487,31 +1487,33 @@ function drawHero(ci,x,y,f,a){
  if(dead){drawSilDead(C,id,P,L,dead,t);return}
  const by=-bob+crouch,ox=lean+lunge;
  // body drawn as a function so we can stamp a soft rim around it first
- const body=(col,col2,rim)=>{
-  const ink=col||C.ink,ink2=col2||C.ink2;
-  // legs
-  P(-3+lx+ox,-4,2,4+ly,ink);P(1+rx+ox,-4,2,4+ry,ink);
-  if(id=='root'){P(-4+lx+ox,-1,3,1,ink);P(1+rx+ox,-1,3,1,ink)}
-  // cloak
+ const body=(col)=>{
+  const one=!!col,K=k=>one?col:C[k]||C.coat;
+  // legs + boots
+  P(-3+lx+ox,-4,2,4+ly,K('pants'));P(1+rx+ox,-4,2,4+ry,K('pants'));P(-3+lx+ox,-1,2,1,K('boot'));P(1+rx+ox,-1,2,1,K('boot'));
+  if(id=='root'){P(-4+lx+ox,-1,3,1,K('boot'));P(1+rx+ox,-1,3,1,K('boot'))}
+  // coat
   const top=id=='root'?-18:-16,bot=-3,wide=id=='root'?5:id=='daemon'?3:4;
-  for(let r=top;r<=bot;r++){const k=(r-top)/(bot-top),w=Math.round(wide+k*(id=='daemon'?2:3)),sh=Math.round(k*-ox*.5);P(-w+ox+sh-(k>.6&&lean>0?1:0),r+by,w*2+1,1,ink)}
-  // hem flutter
-  for(let i=-wide-2;i<=wide+2;i+=2)if(((i+hem)&1)==0)P(i+ox-(lean>0?2:0),bot+1+by,1,1,ink);
-  // inner fold
-  if(!B)P(ox,top+4+by,1,bot-top-5,ink2);else{P(-1+ox,top+3+by,1,bot-top-4,ink2);P(1+ox,top+3+by,1,bot-top-4,ink2)}
-  // head + headgear
+  for(let r=top;r<=bot;r++){const k=(r-top)/(bot-top),w=Math.round(wide+k*(id=='daemon'?2:3)),sh=Math.round(k*-ox*.5),x0=-w+ox+sh-(k>.6&&lean>0?1:0);
+   P(x0,r+by,w*2+1,1,K('coat'));if(!one){P(x0,r+by,2,1,K(B?'coat2':'coatL'));P(x0+w*2-1,r+by,2,1,K(B?'coatL':'coat2'))}}
+  for(let i=-wide-2;i<=wide+2;i+=2)if(((i+hem)&1)==0)P(i+ox-(lean>0?2:0),bot+1+by,1,1,K('coat2'));
+  if(!one){if(!B){P(ox,top+4+by,1,bot-top-5,K('coat2'));P(-wide+ox,top+by,wide*2+1,1,K('acc'))}else{P(-1+ox,top+3+by,1,bot-top-4,K('coat2'));P(1+ox,top+3+by,1,bot-top-4,K('coat2'))}
+   P(-wide+ox,bot-1+by,wide*2+1+2,1,K('coat2'))}
+  if(id=='root'){P(-wide-1+ox,top+by,3,3,K('helm2'));P(wide-1+ox,top+by,3,3,K('helm2'))}
+  // head
   const hy=top-1+by,hx=ox+(lean>0?1:0);
-  P(-2+hx,hy-4,5,5,ink);
-  if(id=='patch'){ // wide kasa hat
-   const ty=hy-5;P(-8+hx,ty,17,1,ink);P(-6+hx,ty-1,13,1,ink);P(-4+hx,ty-2,9,1,ink);P(-2+hx,ty-3,5,1,ink);P(0+hx,ty-4,1,1,ink);
-   if(!rim){P(-8+hx,ty,4,1,ink2);P(-6+hx,ty-1,3,1,ink2)}}
-  else if(id=='daemon'){ // pointed hood with two tips
-   P(-3+hx,hy-6,7,3,ink);P(-3+hx,hy-8,2,2,ink);P(2+hx,hy-8,2,2,ink);P(-3+hx,hy-9,1,1,ink);P(3+hx,hy-9,1,1,ink);P(-4+hx,hy-4,9,2,ink)}
-  else{ // tall jingasa helmet with crest
-   const ty=hy-5;P(-6+hx,ty,13,1,ink);P(-5+hx,ty-1,11,2,ink);P(-3+hx,ty-3,7,2,ink);P(-1+hx,ty-5,3,2,ink);P(-4+hx,ty-6,1,2,ink);P(4+hx,ty-6,1,2,ink)}
+  if(id=='patch'){ // white spiky hair
+   P(-2+hx,hy-4,5,5,K(B?'hair':'skin'));P(-3+hx,hy-6,7,3,K('hair'));P(-3+hx,hy-4,2,4,K('hair'));
+   P(-3+hx,hy-8,2,2,K('hair'));P(0+hx,hy-9,2,3,K('hair'));P(3+hx,hy-8,2,2,K('hair'));
+   if(!one){P(-3+hx,hy-4,7,1,K('hair2'));if(!B)P(1+hx,hy-3,4,1,K('hair'))}}
+  else if(id=='daemon'){ // cat-ear hood
+   P(-3+hx,hy-6,7,7,K('hood'));P(-3+hx,hy-8,2,2,K('hood'));P(2+hx,hy-8,2,2,K('hood'));P(-3+hx,hy-9,1,1,K('hood'));P(3+hx,hy-9,1,1,K('hood'));
+   if(!one&&!B)P(0+hx,hy-4,4,4,K('skin'));if(!one)P(-3+hx,hy-6,7,1,K('hood2'))}
+  else{ // orange helmet with visor
+   P(-3+hx,hy-6,7,7,K('helm'));P(-1+hx,hy-8,3,2,K('helm2'));if(!one){P(-3+hx,hy-6,7,1,K('helm2'));if(!B)P(-1+hx,hy-3,5,2,K('visor'));else P(-3+hx,hy-1,7,1,K('coat2'))}}
   return{hy,hx,top}};
  // soft rim so ink reads on dark floors
- if(!FL){for(const[dx,dy]of[[-1,0],[1,0],[0,-1],[0,1]]){const ox_=x,oy_=y;x+=dx;y+=dy;body(C.rim,C.rim,1);x=ox_;y=oy_}}
+ if(!FL){for(const[dx,dy]of[[-1,0],[1,0],[0,-1],[0,1]]){const ox_=x,oy_=y;x+=dx;y+=dy;body('#05060c');x=ox_;y=oy_}}
  // weapon behind body (back view / wind-up)
  const wB=B||wpn=='back'||(id=='root'&&wpn=='rest');
  const drawW=()=>{
@@ -1532,8 +1534,8 @@ function drawHero(ci,x,y,f,a){
  if(wB)drawW();
  const H=body();
  // face / eyes (front only)
- if(!B&&!FL){const ey=H.hy-2,ex=H.hx;P(ex+1,ey,1,1,C.acc);P(ex+3,ey,1,1,C.acc);if(id=='daemon')P(ex-1,ey+2,6,1,C.acc)}
- if(B&&!FL){P(H.hx-1,H.top+3-bob+crouch,3,1,C.rim)}
+ if(!B&&!FL){const ey=H.hy-2,ex=H.hx;if(id=='root'){P(ex,ey-1,1,1,'#ffe27a');P(ex+2,ey-1,1,1,'#ffe27a')}else{P(ex+1,ey,1,1,C.acc);P(ex+3,ey,1,1,C.acc)}if(id=='daemon')P(ex-2,ey+2,7,1,C.acc)}
+ 
  // scarf / tail
  if(!FL){const sx0=H.hx+(B?2:-3),sy=H.top+1-bob+crouch,len=3+scarf*2;for(let i=0;i<len;i++){const wv=Math.round(Math.sin(t*10+i*.9));P(sx0-i,sy+Math.min(i,2)+(scarf>1?0:i>>1)+(i>1?wv:0),1,1,i%2?C.acc:C.acc2)}}
  if(!wB)drawW();
