@@ -273,6 +273,7 @@ body.touch #pad{display:flex}
 .cnote{margin-top:calc(var(--u)*3)}.cnote label small{color:var(--mut)}.cnote textarea{width:100%;margin-top:calc(var(--u)*1.5);background:#050914;color:var(--ink);border:calc(var(--u)*1) solid #33407f;font:500 var(--fs) var(--tx);padding:calc(var(--u)*2) calc(var(--u)*3);resize:vertical;-webkit-user-select:text;user-select:text}.cnote textarea:focus{outline:none;border-color:var(--ac)}#cnsv{color:var(--ok)}
 @media (max-aspect-ratio:1/1){.cd2{flex-direction:column}}
 body.aim #cv{cursor:none}
+.devp{width:calc(var(--u)*400)}.devp h5{margin:calc(var(--u)*4) 0 calc(var(--u)*2);color:var(--gold)}.devp .dr{margin-top:0;justify-content:flex-start;gap:calc(var(--u)*2.5)}.devp .btn{padding:calc(var(--u)*1) calc(var(--u)*4)}.dzs{display:grid;grid-template-columns:repeat(5,1fr);gap:calc(var(--u)*2)}.dz{display:flex;align-items:center;gap:calc(var(--u)*1.5)}.dz small{font:calc(var(--u)*5) var(--px);min-width:calc(var(--u)*8);text-align:right}.dz .btn{flex:1;padding:calc(var(--u)*.8) calc(var(--u)*1.5)}.logo{cursor:default}
 </style>
 <div id="wrap">
 <canvas id="cv" width="480" height="270"></canvas>
@@ -1144,7 +1145,7 @@ function doHits(cf){
  for(const e of E){if(e.dead||e.hide||P.hits.has(e))continue;const d=Math.hypot(e.x-P.x,e.y-P.y);if(d<cf.r+14+e.r&&(d<e.r+8||adiff(Math.atan2(e.y-P.y,e.x-P.x),a)<cone)){P.hits.add(e);hitE(e,cf.dm,{kb:cf.kb,ang:a,big:cf.big})}}}
 function aoe(x,y,r,mult,kb,crit){ringFX(x,y,4,r,CH[P.ci].col);let n=0;for(const e of E){if(e.dead||e.hide)continue;if(Math.hypot(e.x-x,e.y-y)<r+e.r){hitE(e,mult,{kb,ang:Math.atan2(e.y-y,e.x-x),big:1,crit});n++}}return n}
 function hurtP(d,src,o){
- o=o||{};if(P.dead||P.inv>0)return false;
+ o=o||{};if(P.dead||P.inv>0||DEV.god)return false;
  if(P.fw>0)d*=.3;d*=(1-ST.dr);d=Math.max(1,Math.round(d));
  P.hp-=d;run.dmgTaken+=d;P.inv=o.dot?.3:.85;P.fl=.1;num(P.x,P.y,34,d,o.dot?'dot':'p');
  if(!o.dot){P.st='hurt';P.stT=0;const a=src?Math.atan2(P.y-src.y,P.x-src.x):Math.atan2(-P.ay,-P.ax);P.vx=Math.cos(a)*170;P.vy=Math.sin(a)*170;P.buf=0;
@@ -1804,7 +1805,7 @@ function togglePause(){
  if(modal=='pause'){GO.resume();return}
  if(modal)return;
  modal='pause';
- showOv('<div class="pn" style="text-align:center;min-width:calc(var(--u)*150)"><h3>หยุดเกม</h3><div class="menu" style="min-width:0"><button class="btn pri" data-go="resume">เล่นต่อ</button><button class="btn" data-go="mute">เสียง: '+(muted?'ปิด':'เปิด')+'</button><button class="btn" data-go="quit">ออกไปหน้าหลัก</button></div></div>');
+ showOv('<div class="pn" style="text-align:center;min-width:calc(var(--u)*150)"><h3>หยุดเกม</h3><div class="menu" style="min-width:0"><button class="btn pri" data-go="resume">เล่นต่อ</button><button class="btn" data-go="mute">เสียง: '+(muted?'ปิด':'เปิด')+'</button><button class="btn" data-go="dev">โหมดนักพัฒนา</button><button class="btn" data-go="quit">ออกไปหน้าหลัก</button></div></div>');
  onKey=c=>{if(c=='Enter'||c=='Space'){GO.resume();return true}}}
 GO.resume=()=>{hideOv();modal=null;for(const k in held)held[k]=false};
 GO.quit=()=>{const c=Math.floor(run.kills/6)+run.idx*2+run.bosses*10;SAVE.cores+=c;SAVE.best=Math.max(SAVE.best,run.idx);putSave();fadeDir=0;fade=0;showTitle()};
@@ -1929,6 +1930,37 @@ function showCodex(){
 GO.cdxBack=()=>{cdxOn=false;showTitle()};
 GO.cdx=i=>{cdxSel=+i;GO._cdxJump=1;showCodex()};
 
+/* ================= developer menu ================= */
+/* Open with F2, by tapping the game logo 5 times, from the pause menu, or with #dev at the end of the link. */
+const DEV={god:0,ci:0,taps:0,tapT:0};
+function devRun(){if(!run||state!='play'){SAVE.intro=1;SAVE.tut=1;startRun(DEV.ci)}hideOv();modal=null;paused=false;cine=null;if(CS){CS.onEnd=null;endCS()}}
+function showDev(){
+ const inRun=state=='play'&&run;modal='menu';
+ const hero=CH.map((c,i)=>'<button class="btn'+(DEV.ci==i?' pri':'')+'" data-go="devCi" data-arg="'+i+'">'+c.n+'</button>').join('');
+ let zones='';for(let z=0;z<10;z++)zones+='<div class="dz"><small style="color:'+ZN[z].c+'">'+(z+1)+'</small><button class="btn" data-go="devRoom" data-arg="'+(z*2)+'">สู้</button><button class="btn" data-go="devRoom" data-arg="'+(z*2+1)+'">บอส</button></div>';
+ const tg=(k,l,on)=>'<button class="btn'+(on?' pri':'')+'" data-go="'+k+'">'+l+(on?' : เปิด':'')+'</button>';
+ showOv('<div class="pn devp"><h3>โหมดนักพัฒนา</h3><small class="k">DEV MENU · F2 / แตะโลโก้ 5 ครั้ง / เมนูหยุดเกม</small>'+
+  '<h5>ตัวละครที่ใช้ตอนวาร์ป</h5><div class="row dr">'+hero+'</div>'+
+  '<h5>วาร์ปไปห้อง (โซน 1-10)</h5><div class="dzs">'+zones+'</div>'+
+  '<h5>คัตซีน</h5><div class="row dr"><button class="btn" data-go="devCs" data-arg="open">ฉากเปิดเกม</button><button class="btn" data-go="devRoom" data-arg="19">เปิดตัวบอสสุดท้าย</button><button class="btn" data-go="devCs" data-arg="end">ฉากจบ</button></div>'+
+  '<h5>ช่วยทดสอบ</h5><div class="row dr">'+tg('devGod','อมตะ',DEV.god)+(inRun?'<button class="btn" data-go="devKill">ฆ่าศัตรูทั้งห้อง</button><button class="btn" data-go="devP2">บอสเข้าเฟส 2</button><button class="btn" data-go="devNext">ข้ามห้อง</button><button class="btn" data-go="devHeal">เลือดเต็ม + พลังงานเต็ม</button>':'')+'<button class="btn" data-go="devCodex">ปลดล็อกสารานุกรม</button><button class="btn" data-go="devCores">+999 คอร์</button></div>'+
+  '<div class="row"><button class="btn pri" data-go="devClose">'+(inRun?'กลับไปเล่น':'กลับ')+'</button></div></div>');
+ onKey=c=>{if(c=='Escape'||c=='F2'){GO.devClose();return true}}}
+GO.dev=showDev;
+GO.devCi=i=>{DEV.ci=+i;showDev()};
+GO.devRoom=i=>{devRun();if(+i===0&&room&&room.idx===0&&room.state=='card')return;startRoom(+i)};
+GO.devCs=k=>{if(k=='open'){if(state=='play'){hideOv();modal=null}state='title';room=null;$('hud').hidden=true;playCS(openingCS(()=>showTitle()))}else{devRun();startRoom(19);if(CS){CS.onEnd=null;endCS()}cine=null;room.state='done';E=[];run.z=9;afterBoss()}};
+GO.devGod=()=>{DEV.god=DEV.god?0:1;showDev()};
+GO.devKill=()=>{for(const e of E)if(!e.dead&&!e.boss)killE(e);if(room&&room.boss&&!room.boss.dead){for(const t of room.twins||[room.boss])t.hp=1}GO.devClose()};
+GO.devP2=()=>{const b=room&&room.boss;if(b&&!b.dead)b.hp=Math.min(b.hp,Math.floor(b.mhp*.49));GO.devClose()};
+GO.devNext=()=>{const i=Math.min(19,run.idx+1);hideOv();modal=null;paused=false;startRoom(i)};
+GO.devHeal=()=>{P.hp=P.mhp;P.en=100;P.lock={};GO.devClose()};
+GO.devCodex=()=>{SAVE.codex=1023;putSave();toast('ปลดล็อกสารานุกรมครบแล้ว','');showDev()};
+GO.devCores=()=>{SAVE.cores+=999;putSave();toast('+999 คอร์','');showDev()};
+GO.devClose=()=>{if(state=='play'&&run){hideOv();modal=null;paused=false;for(const k in held)held[k]=false}else showTitle()};
+addEventListener('keydown',e=>{if(e.code=='F2'&&!e.repeat&&!CS){e.preventDefault();if(modal=='menu'&&ov.querySelector('.devp'))GO.devClose();else{if(state=='play'&&!modal)paused=true;showDev()}}});
+ov.addEventListener('click',e=>{if(!e.target.closest('.logo'))return;const n=performance.now();DEV.taps=n-DEV.tapT<700?DEV.taps+1:1;DEV.tapT=n;if(DEV.taps>=5){DEV.taps=0;showDev()}});
+
 /* ================= select-card preview ================= */
 function drawSelCards(){
  ov.querySelectorAll('canvas[data-ci]').forEach(c=>{
@@ -1958,5 +1990,5 @@ cv.addEventListener('pointerdown',e=>{if(e.pointerType!='mouse'||e.button!==0)re
 addEventListener('pointerup',e=>{if(e.pointerType=='mouse')setAct('A',false)});
 addEventListener('pointerdown',ac);addEventListener('touchend',ac,{passive:true});addEventListener('click',ac);
 $('cs').addEventListener('click',()=>{csSkip=1});
-showTitle();requestAnimationFrame(frame);
+showTitle();if(/dev/.test(location.hash))setTimeout(showDev,300);requestAnimationFrame(frame);
 </script>
