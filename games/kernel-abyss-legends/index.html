@@ -1655,6 +1655,92 @@ function bgmUnlock(){if(BGM.unlocked)return;BGM.unlocked=true;if(BGM.cur)BGM.cur
 addEventListener('pointerdown',bgmUnlock);addEventListener('keydown',bgmUnlock);addEventListener('touchend',bgmUnlock,{passive:true});
 
 
+/* ================= RANSOMWARE KING (final boss) ================= */
+/* Armoured tyrant king: crown, red-eyed helm, chest gem, padlock belt, tattered red cape, chains with padlocks
+   and a glowing red key-sword. Front 3/4 and back 3/4 views, mirrored; idle, walk, cleave, cast, phase-2 rage. */
+Object.assign(KB[9],{bn:'Ransomware King',te:'ราชันแห่งไวรัสเรียกค่าไถ่',ee:'THE KING OF THE LOCKED WORLD',zn:'แกนกลาง KERNEL CORE',zs:'Kernel Core',b:'ทุกไฟล์ในโลกนี้... ล้วนเป็นของข้า'});
+BD[9]={n:'Ransomware King',w:40,h:62,hp:2800,fly:0,dm:13};HOVER[9]=0;
+const KG={d:'#120f17',d2:'#211b2a',d3:'#3a3046',r:'#ff2233',r2:'#c0152c',r3:'#6e0b1b',g:'#e2a83c',g2:'#9c6a1c',g3:'#ffe08a',w:'#ffd6dc'};
+function kingSword(P,L,F,x,y,hx,hy,ang,len,glow,t){
+ const ca=Math.cos(ang),sa=Math.sin(ang),tx=hx+ca*len,ty=hy+sa*len,nx=-sa,ny=ca;
+ // key bow (ring) behind the hand, guard, blade with a bright core, key teeth near the tip
+ const bx=hx-ca*4,by=hy-sa*4;for(let i=0;i<10;i++){const a=i/10*6.283;P(Math.round(bx+Math.cos(a)*2.6),Math.round(by+Math.sin(a)*2.6),1,1,KG.g)}P(Math.round(bx),Math.round(by),1,1,KG.r);
+ L(hx-nx*3,hy-ny*3,hx+nx*3,hy+ny*3,KG.g,1);
+ if(glow&&!FL){g.globalAlpha=.25+.1*Math.sin(t*9);for(let k=0;k<=len;k+=3)disc(x+F*(hx+ca*k),y+hy+sa*k,3,KG.r);g.globalAlpha=1}
+ L(hx+ca*2,hy+sa*2,tx,ty,KG.r2,3);L(hx+ca*2,hy+sa*2,tx,ty,KG.r,2);L(hx+ca*3,hy+sa*3,tx-ca*2,ty-sa*2,glow?KG.w:'#ff8a96',1);
+ for(const k of[len-6,len-3]){const px_=hx+ca*k,py_=hy+sa*k;L(px_,py_,px_+nx*3,py_+ny*3,KG.r,1)}
+ return[tx,ty]}
+function drawKing(b){
+ if(b.hide)return;
+ const x=Math.round(b.x),y=Math.round(b.y),t=b.t||0,F=b.face>0?1:-1,fl0=FL;
+ if(b.fl>0)FL='#fff';const ga=b.fade?.35:b.revT>0?.4:1;g.globalAlpha=ga;
+ const P=(dx,dy,w,h,c)=>px(F>0?x+dx:x-dx-w+1,y+dy,w,h,c),L=(x0,y0,x1,y1,c,th)=>lnpx(x+F*x0,y+y0,x+F*x1,y+y1,c,th||1);
+ const sp=Math.hypot(b.vx||0,b.vy||0),walk=sp>12&&!b.atk,back=((b.vx||0)+(b.vy||0))<-40&&!b.atk&&!b.cast,ph=Math.floor(t*8)%4;
+ const bob=walk?(ph%2):(Math.sin(t*2.2)>0?1:0),lA=walk?[0,-2,0,0][ph]:0,lB=walk?[0,0,0,-2][ph]:0,p2=!!b.p2;
+ const eye=b.tel?'#ffffff':KG.r,flut=Math.floor(t*6);
+ // sword pose
+ let hx=14,hy=-28,ang=1.15,glow=p2,trail=null;const ak=b.atk?Math.min(1,((t-(b.atkT||0))/(b.atk==1?.6:.35))):0;
+ if(b.cast){hx=9;hy=-58;ang=-Math.PI/2;glow=true}
+ else if(b.atk==1){hx=lerp(14,9,ak);hy=lerp(-28,-56,ak);ang=lerp(1.15,-2.3,ak)}
+ else if(b.atk==2){const e=ease(ak);hx=lerp(9,19,e);hy=lerp(-56,-26,e);ang=lerp(-2.3,1.05,e);glow=true;trail=e}
+ else if(b.atk==3){hx=lerp(19,14,ak);hy=lerp(-26,-28,ak);ang=lerp(1.05,1.15,ak)}
+ // ---- cape (behind in front view, in front in back view) ----
+ const cape=()=>{for(let r=0;r<=43;r++){const yy=-46+r,w=11+Math.floor(r*4/43)+(back?1:0),sw=Math.round(Math.sin(t*2+r*.12)*(r/43)*1.5);P(-w-(back?0:2)+sw,yy+bob,w*2+1,1,KG.r2)}
+  for(const k of[-9,-4,2,7]){P(k-(back?0:2),-40+bob,1,36,KG.r3)}if(back){P(-12,-46+bob,25,2,KG.r);P(-1,-44+bob,3,4,KG.g)}
+  for(let i=-14;i<=14;i+=2){const ln=((i+flut)%3+3)%3==0?4:((i+flut)&1)?2:1;P(i-(back?0:2),-3+bob,1,ln,KG.r3)}};
+ const chains=()=>{for(const s of[-1,1]){const cx=s*13;for(let yy=-44;yy<-16;yy+=2)P(cx+((yy/2)&1),yy+bob,1,1,KG.g);P(cx-2,-16+bob,4,4,KG.g);P(cx-1,-18+bob,2,2,KG.g2);P(cx-.5,-15+bob,1,2,KG.d)}};
+ if(!back)cape();
+ // legs
+ P(-8,-18+lA,6,16,KG.d);P(2,-18+lB,6,16,KG.d);P(-8,-18+lA,2,16,KG.d3);P(2,-18+lB,2,16,KG.d3);
+ P(-8,-11+lA,6,2,KG.g2);P(2,-11+lB,6,2,KG.g2);P(-9,-3+lA,8,3,KG.d2);P(1,-3+lB,8,3,KG.d2);P(-2,-2+lA,2,2,KG.g);P(8,-2+lB,2,2,KG.g);
+ // waist: tassets, tabard, padlock belt
+ P(-11,-26+bob,22,8,KG.d);P(-11,-19+bob,22,1,KG.g2);
+ if(!back){P(-3,-26+bob,7,18,KG.r3);P(-2,-26+bob,5,16,KG.r2);for(let i=-2;i<3;i+=2)P(i,-10+bob,1,1+((i+flut)&1),KG.r3)}
+ P(-11,-28+bob,22,3,KG.d2);P(-11,-28+bob,22,1,KG.g2);
+ if(!back){P(-2,-30+bob,5,5,KG.g);P(-1,-32+bob,3,2,KG.g2);P(0,-28+bob,1,2,KG.d)}
+ // torso
+ P(-10,-44+bob,20,16,KG.d);P(-1,-44+bob,2,16,KG.d2);P(-10,-44+bob,3,16,KG.d3);P(-8,-45+bob,16,2,KG.g2);
+ if(p2&&!FL){g.fillStyle=Math.floor(t*8)%2?KG.r:'#ff6a7a';for(const[a1,b1,a2,b2]of[[-8,-42,-3,-36],[-3,-36,-6,-30],[5,-43,8,-34],[-6,-16,-4,-8],[5,-15,6,-6]])L(a1,b1+bob,a2,b2+bob,Math.floor(t*8)%2?KG.r:'#ff6a7a',1)}
+ if(!back){ // chest gem in a spiked gold frame
+  P(-4,-38+bob,9,3,KG.g2);P(0,-43+bob,1,3,KG.g);P(0,-33+bob,1,3,KG.g);P(-6,-37+bob,2,1,KG.g);P(5,-37+bob,2,1,KG.g);
+  P(-1,-41+bob,3,8,KG.r);P(-2,-40+bob,5,6,KG.r);P(-3,-38+bob,7,2,KG.r);P(-1,-40+bob,2,2,KG.w);
+  if(!FL){g.globalAlpha=ga*(.35+.25*Math.sin(t*(p2?9:4)));disc(x+F*0,y-37+bob,p2?9:6,KG.r);g.globalAlpha=ga}}
+ else{P(-6,-42+bob,12,1,KG.g2)}
+ // off arm + chain and padlock in hand
+ P(-15,-40+bob,5,12,KG.d);P(-15,-29+bob,5,4,KG.d2);P(-15,-29+bob,5,1,KG.g2);
+ if(!back){for(let yy=-25;yy<-16;yy+=2)P(-13,yy+bob,1,1,KG.g);P(-15,-16+bob,4,4,KG.g);P(-14,-18+bob,2,2,KG.g2);P(-13,-15+bob,1,2,KG.d)}
+ // head: helm with a visor slit and burning eyes, crown on top
+ P(-6,-57+bob,12,12,KG.d);P(-6,-57+bob,2,12,KG.d3);P(-5,-46+bob,10,2,KG.d2);
+ if(!back){P(-4,-52+bob,9,2,'#000');P(-3,-52+bob,2,1,eye);P(2,-52+bob,2,1,eye);P(0,-50+bob,1,5,KG.d2);
+  if(!FL){g.globalAlpha=ga*(p2?.6:.35);disc(x+F*(-2),y-52+bob,2,KG.r);disc(x+F*3,y-52+bob,2,KG.r);g.globalAlpha=ga}}
+ else P(-5,-50+bob,10,1,KG.d2);
+ P(-7,-59+bob,14,3,KG.g);P(-7,-59+bob,14,1,KG.g3);for(const i of[-7,-4,3,6])P(i,-62+bob,1,3,KG.g);P(-1,-64+bob,3,5,KG.g);P(0,-65+bob,1,1,KG.g3);
+ P(-1,-58+bob,2,1,KG.r);P(-5,-58+bob,1,1,KG.r);P(4,-58+bob,1,1,KG.r);
+ // pauldrons with spikes
+ for(const s of[-1,1]){const ox=s<0?-18:9;P(ox,-48+bob,9,8,KG.d);P(ox,-48+bob,9,1,KG.d3);P(ox,-41+bob,9,1,KG.g2);P(ox,-44+bob,9,1,KG.r3);
+  P(ox+(s<0?1:6),-51+bob,2,3,KG.g);P(ox+(s<0?5:2),-52+bob,2,4,KG.g)}
+ if(back){chains();cape();kingSword(P,L,F,x,y,15,-30+bob,1.15,22,glow,t);}
+ else{
+  // sword arm in front
+  L(12,-43+bob,hx,hy+bob,KG.d,4);L(12,-43+bob,hx,hy+bob,KG.d3,1);P(hx-2,hy-2+bob,4,4,KG.d2);P(hx-2,hy-2+bob,4,1,KG.g2);
+  const tip=kingSword(P,L,F,x,y,hx,hy+bob,ang,26,glow,t);
+  if(trail!=null&&!FL){g.globalAlpha=ga*(1-Math.max(0,trail-.85)*4);for(let i=0;i<=16;i++){const e=trail*i/16,a=lerp(-2.3,1.05,e),hh=lerp(-56,-26,e),hx2=lerp(9,19,e),r=26,w=Math.max(1,Math.round(4*(i/16)));
+    const px_=hx2+Math.cos(a)*r,py_=hh+Math.sin(a)*r+bob;g.fillStyle=i>12?'#fff':KG.r;g.fillRect(Math.round(x+F*px_)-(w>>1),Math.round(y+py_)-(w>>1),w,w)}g.globalAlpha=ga}}
+ if(b.cast&&!FL){g.globalAlpha=ga*.5;ringpx(x+F*9,y-84+bob,6+Math.sin(t*10)*2,KG.r,1);g.globalAlpha=ga}
+ if(p2&&!FL){for(let i=0;i<5;i++){const k=(t*.8+i*.2)%1;g.globalAlpha=ga*(1-k);g.fillStyle=i%2?KG.r:'#ff6a7a';g.fillRect(Math.round(x+Math.sin(i*2.3+t)*16),Math.round(y-8-k*60),1,2)}g.globalAlpha=ga}
+ FL=fl0;g.globalAlpha=1;
+ if(b.tel>0&&!b.atk)bang(x,y-74)}
+const _drawBoss0=drawBoss;
+drawBoss=function(b){if(b.z==9)return drawKing(b);return _drawBoss0(b)};
+// key-sword cleave: stride in, raise the key-blade, bring it down across the floor in front
+BA[9].unshift(function*(b){
+ for(let i=0;i<(b.p2?2:1);i++){
+  const d=dist(b,P);if(d>58){const a=aimB(b);yield*flyTo(b,b.x+Math.cos(a)*(d-44),b.y+Math.sin(a)*(d-44),125)}
+  const a=aimB(b),cx=b.x+Math.cos(a)*34,cy=b.y+Math.sin(a)*34;b.face=sfOf(Math.cos(a),Math.sin(a),b.face);b.atk=1;b.atkT=b.t;sfx('warn');
+  hz('circ',{x:cx,y:cy,r:36,d:.6,dur:.18,dmg:b.dm*1.5,col:'#ff2233'});
+  yield .6;b.atk=2;b.atkT=b.t;sfx('swing');sfx('boom');shake=Math.max(shake,7);if(typeof vfx=='function')vfx('groundSlam',cx,cy,0,{reach:70,palette:VP().blood});
+  yield .35;b.atk=3;b.atkT=b.t;yield .4;b.atk=0;yield .2}});
+
 /* ================= overlay / screens ================= */
 const ov=$('ov'),GO={};
 let qzQ=null,selCh=0,selActive=false,pickCb=null,pickList=null,qzOrder=[],qzOk=false,storyI=0,storyTimer=0,storyNext=null;
