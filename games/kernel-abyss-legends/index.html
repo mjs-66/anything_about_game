@@ -272,6 +272,7 @@ body.touch #pad{display:flex}
 .cd2{display:flex;gap:calc(var(--u)*6);align-items:flex-start}.cdm{flex:none;text-align:center}.cdm canvas{width:calc(var(--u)*110*1.25);height:calc(var(--u)*84*1.25);image-rendering:pixelated;border:calc(var(--u)*1) solid #05060c;box-shadow:0 0 0 calc(var(--u)*.8) #1c2a5c;display:block}.cdq{margin-top:calc(var(--u)*2);color:#ff9aa8;font-style:italic;max-width:calc(var(--u)*137)}.cdi{flex:1;min-width:0}.cdi .warn{color:#ff9aa8}
 .cnote{margin-top:calc(var(--u)*3)}.cnote label small{color:var(--mut)}.cnote textarea{width:100%;margin-top:calc(var(--u)*1.5);background:#050914;color:var(--ink);border:calc(var(--u)*1) solid #33407f;font:500 var(--fs) var(--tx);padding:calc(var(--u)*2) calc(var(--u)*3);resize:vertical;-webkit-user-select:text;user-select:text}.cnote textarea:focus{outline:none;border-color:var(--ac)}#cnsv{color:var(--ok)}
 @media (max-aspect-ratio:1/1){.cd2{flex-direction:column}}
+body.aim #cv{cursor:none}
 </style>
 <div id="wrap">
 <canvas id="cv" width="480" height="270"></canvas>
@@ -868,6 +869,7 @@ function renderWorld(){
  g.restore();
  if(room.dark>0&&P){const a=Math.min(.94,room.dark*1.6);g.save();g.fillStyle='rgba(0,2,8,'+a+')';g.beginPath();g.rect(0,0,W,H);g.arc(PSX,PSY-14,50,0,6.2832,true);const b=room.boss;if(b&&!b.dead){const q=pj(b.x,b.y,b.alt+44);g.moveTo(q[0]+12,q[1]);g.arc(q[0],q[1],12,0,6.2832,true)}g.fill('evenodd');g.restore()}
  if(P&&P.hp/P.mhp<.3&&!P.dead){const a=(.18+.12*Math.sin(gt*6))*(1-P.hp/P.mhp/.3*.6);g.fillStyle='rgba(255,20,40,'+a+')';g.fillRect(0,0,W,6);g.fillRect(0,H-6,W,6);g.fillRect(0,0,6,H);g.fillRect(W-6,0,6,H)}
+ drawReticle();
  if(flashV>0){g.globalAlpha=Math.min(1,flashV*2);g.fillStyle=flashC;g.fillRect(0,0,W,H);g.globalAlpha=1}}
 let MF=null;
 function renderMenu(){
@@ -892,6 +894,23 @@ function vfxDraw(){
  PFX.composite(VFX.frame,VFX.img.data,null);VFX.cx.putImageData(VFX.img,0,0);g.drawImage(VFX.cv,0,0)}
 const scrFlip=a=>Math.cos(a)-Math.sin(a)<0;
 function vfxHit(e,crit,a){const h=e.alt+e.h/2;if(crit)vfx('critHit',e.x,e.y,h,{height:0,flip:scrFlip(a)});else{const o={height:0,flip:scrFlip(a)};if(!e.boss)o.palette=['#0b2540','#1d6fd6','#35e0ff','#8fefff','#ffffff','#ffffff','#ffffff'];vfx('hitSpark',e.x,e.y,h,o)}}
+
+/* ================= mouse aim ================= */
+/* Moving the mouse over the stage turns aiming over to it: the hero faces the cursor, and attacks, skills and
+   (when no direction key is held) dashes go toward it. Without a mouse the game keeps its auto-aim. */
+const MOUSE={sx:0,sy:0,t:-99,on:false};
+function mouseWorld(){const dx=MOUSE.sx-W/2,dy=MOUSE.sy+12-(H/2+OYC);return[cam.x+(dx/K1+dy/K2)/2,cam.y+(dy/K2-dx/K1)/2]}
+const mouseLive=()=>MOUSE.on&&gt-MOUSE.t<6&&state=='play'&&!document.body.classList.contains('touch');
+function mouseAim(p){if(!mouseLive())return false;const w=mouseWorld(),dx=w[0]-p.x,dy=w[1]-p.y,l=Math.hypot(dx,dy);if(l<4)return true;p.ax=dx/l;p.ay=dy/l;p.face=sfOf(p.ax,p.ay,p.face);return true}
+cv.addEventListener('pointermove',e=>{if(e.pointerType!='mouse')return;const r=cv.getBoundingClientRect();let x,y;
+ if(typeof ROT!='undefined'&&ROT){x=(e.clientY-r.top)/r.height*W;y=(1-(e.clientX-r.left)/r.width)*H}else{x=(e.clientX-r.left)/r.width*W;y=(e.clientY-r.top)/r.height*H}
+ MOUSE.sx=x;MOUSE.sy=y;MOUSE.t=gt;MOUSE.on=true});
+cv.addEventListener('pointerleave',()=>{MOUSE.on=false});
+function drawReticle(){
+ if(!mouseLive()||modal||cine||!P||P.dead)return;const x=Math.round(MOUSE.sx),y=Math.round(MOUSE.sy),c=CH[P.ci].col,k=Math.floor(gt*6)%2;
+ g.globalAlpha=.9;for(const[dx,dy,w,h]of[[-6-k,0,3,1],[4+k,0,3,1],[0,-6-k,1,3],[0,4+k,1,3]]){g.fillStyle='#05060c';g.fillRect(x+dx-1,y+dy-1,w+2,h+2);g.fillStyle=c;g.fillRect(x+dx,y+dy,w,h)}
+ g.fillStyle='#fff';g.fillRect(x,y,1,1);
+ const q=pj(P.x+P.ax*26,P.y+P.ay*26);g.globalAlpha=.55;g.fillStyle=c;g.fillRect(q[0]-1,q[1]-1,3,3);g.globalAlpha=1}
 
 /* ================= game state ================= */
 let P=null,run=null,room=null,E=[],PR=[],HZ=[],PT=[],DN=[],PU=[],SQ=[],shake=0,hs=0,gt=0,state='title',modal=null,paused=false,fade=0,fadeDir=0,fadeCb=null,flashV=0,flashC='#fff',cine=null,tut=null,ST={},joy={x:0,y:0};
@@ -1144,8 +1163,8 @@ function aimAt(e){if(!e)return;const a=Math.atan2(e.y-P.y,e.x-P.x);P.ax=Math.cos
 function inDir(){const ix=cl((held.R?1:0)-(held.L?1:0)+joy.x,-1,1),iy=cl((held.DN?1:0)-(held.UP?1:0)+joy.y,-1,1),m=Math.min(1,Math.hypot(ix,iy));let wx=(ix/K1+iy/K2)/2,wy=(iy/K2-ix/K1)/2;const l=Math.hypot(wx,wy);if(l<1e-3)return null;return[wx/l,wy/l,m]}
 function startAtk(step){
  const p=P,C=CH[p.ci];p.st='atk';p.step=step;p.stT=0;p.buf=0;p.hits=new Set();p.cfg=C.st[step];p.swung=0;
- const d=inDir();if(d){p.ax=d[0];p.ay=d[1];p.face=sfOf(d[0],d[1],p.face)}const e=nearest(130,d?1.2:3.2);if(e)aimAt(e);sfx('swing');tutFlag('atk')}
-function startDash(){const p=P,d=inDir();if(d){p.ax=d[0];p.ay=d[1];p.face=sfOf(d[0],d[1],p.face)}if(p.dashCh==p.dashMax)p.dashCd=ST.dashCd;p.dashCh--;p.st='dash';p.stT=0;p.inv=Math.max(p.inv,.27);p.buf=0;sfx('dash');tutFlag('dash')}
+ if(!mouseAim(p)){const d=inDir();if(d){p.ax=d[0];p.ay=d[1];p.face=sfOf(d[0],d[1],p.face)}const e=nearest(130,d?1.2:3.2);if(e)aimAt(e)}sfx('swing');tutFlag('atk')}
+function startDash(){const p=P,d=inDir();if(d){p.ax=d[0];p.ay=d[1];p.face=sfOf(d[0],d[1],p.face)}else mouseAim(p);if(p.dashCh==p.dashMax)p.dashCd=ST.dashCd;p.dashCh--;p.st='dash';p.stT=0;p.inv=Math.max(p.inv,.27);p.buf=0;sfx('dash');tutFlag('dash')}
 function trySkill(n){
  const p=P,C=CH[p.ci],s=n==1?C.s1:C.s2;
  if(p.st=='skill'||p.st=='hurt'||p.st=='dash')return;
@@ -1153,7 +1172,7 @@ function trySkill(n){
  if((n==1?p.cd1:p.cd2)>0||p.en<s.cost)return;
  p.en-=s.cost;const cd=s.cd*ST.cdMul;if(n==1){p.cd1=cd;p.cm1=cd}else{p.cd2=cd;p.cm2=cd}
  p.st='skill';p.skN=n;p.skT=0;p.skF=0;p.skD=SKD[C.id][n];p.buf=0;
- const d=inDir();if(d){p.ax=d[0];p.ay=d[1];p.face=sfOf(d[0],d[1],p.face)}const e=nearest(260,d?1:3.2);if(e)aimAt(e);sfx('skill');tutFlag('skill')}
+ if(!mouseAim(p)){const d=inDir();if(d){p.ax=d[0];p.ay=d[1];p.face=sfOf(d[0],d[1],p.face)}const e=nearest(260,d?1:3.2);if(e)aimAt(e)}sfx('skill');tutFlag('skill')}
 const SKD={patch:{1:.34,2:.6},daemon:{1:.3,2:.5},root:{1:.55,2:.38}};
 function pshot(o){PR.push(Object.assign({own:'p',x:P.x,y:P.y,alt:14,vx:0,vy:0,r:6,life:.8,t:0,kind:'orb',col:'#fff',pierce:1,hits:new Set(),mult:1,kb:100},o))}
 function skillTick(dt){
@@ -1184,7 +1203,7 @@ function updPlayer(dt){
  switch(p.st){
   case 'idle':{
    const tx=d?d[0]*mv*d[2]:0,ty=d?d[1]*mv*d[2]:0,k=Math.min(1,dt*16);p.vx+=(tx-p.vx)*k;p.vy+=(ty-p.vy)*k;
-   if(d){p.ax=d[0];p.ay=d[1];p.face=sfOf(d[0],d[1],p.face)}
+   if(!mouseAim(p)&&d){p.ax=d[0];p.ay=d[1];p.face=sfOf(d[0],d[1],p.face)}
    if(hit.S1)trySkill(1);else if(hit.S2)trySkill(2);
    if(p.st=='idle'&&(hit.A||held.A))startAtk(p.comboT>0?p.nextStep:0);
    break}
@@ -1688,7 +1707,7 @@ GO.ups=showUps;
 GO.buy=id=>{const u=UP.find(x=>x.id==id),l=SAVE.up[id];if(!u||l>=u.max)return;const c=u.cost(l);if(SAVE.cores<c)return;SAVE.cores-=c;SAVE.up[id]++;putSave();sfx('pick');showUps()};
 function showHow(){
  modal='menu';
- const K=[['W A S D / ลูกศร','เดินอิสระ 8 ทิศรอบสนาม'],['J / F / คลิกเมาส์','โจมตี กดต่อเนื่องเป็นคอมโบ เล็งศัตรูใกล้สุดอัตโนมัติ'],['Space / Shift','แดชไปทางที่เดิน หลบโจมตี (ตัวไม่โดนชั่วขณะ)'],['Q / E','สกิลประจำตัว ใช้พลังงานสีฟ้า (หรือ K / L)'],['R','ชุดซ่อมแซม ฟื้นเลือด 40% (หรือ H)'],['Esc / P','หยุดเกม'],['M','ปิด/เปิดเสียง']];
+ const K=[['W A S D / ลูกศร','เดินอิสระ 8 ทิศรอบสนาม'],['เมาส์','ตัวละครหันตามเมาส์ คลิกซ้ายเพื่อโจมตีไปทางเมาส์'],['J / F','โจมตี กดต่อเนื่องเป็นคอมโบ (ถ้าไม่ใช้เมาส์ จะเล็งศัตรูใกล้สุดอัตโนมัติ)'],['Space / Shift','แดชไปทางที่เดิน หลบโจมตี (ตัวไม่โดนชั่วขณะ)'],['Q / E','สกิลประจำตัว ใช้พลังงานสีฟ้า (หรือ K / L)'],['R','ชุดซ่อมแซม ฟื้นเลือด 40% (หรือ H)'],['Esc / P','หยุดเกม'],['M','ปิด/เปิดเสียง']];
  showOv('<div class="pn how"><h3>วิธีเล่น</h3><table>'+K.map(k=>'<tr><td>'+kc(k[0])+'</td><td>'+k[1]+'</td></tr>').join('')+'</table><h5>ระบบเกม</h5><p>ฝ่า 20 ห้อง (10 โซน × 2 ห้อง: ห้องต่อสู้ + ห้องบอส) สนามเป็นมุมมองไอโซเมตริก เดินอิสระได้ทุกทิศ กำจัดไวรัสให้หมดห้อง เลือกเรลิก 1 จาก 3 ชิ้น แล้วเดินไปทางออกที่มุมขวาของสนาม เรลิกซ้ำกันสะสมเลเวลได้</p><p>บอสแต่ละตัวมีกลไกตามพฤติกรรมไวรัสจริง เช่น ร่างที่ฟื้นได้ของไวรัสหลายส่วน ร่างโคลนของไวรัสแปลงกาย สวิตช์ Cold Reboot ของไวรัสสิงแรม และดิสก์ Backup ของแรนซัมแวร์ ฉากเปิดตัวบอสจะบอกจุดอ่อนไว้ให้</p><p>หลังโค่นบอสจะได้อ่านข้อมูลไวรัสและตอบคำถาม ตอบถูกได้เรลิกระดับสูง ตอบผิดโซนถัดไปยากขึ้น ล้มเหลวหรือชนะจะได้คอร์ไปอัปเกรดถาวร ไวรัสที่โค่นได้จะปลดล็อกในสารานุกรมไวรัสที่หน้าหลัก</p><p>มือถือ: ลากจอยสติ๊กมุมซ้ายล่างเพื่อเดิน ปุ่มโจมตีกดค้างได้</p><div class="row"><button class="btn pri" data-go="title">กลับ</button></div></div>');
  onKey=c=>{if(c=='Escape'||c=='Enter'){showTitle();return true}}}
 GO.how=showHow;
@@ -1842,7 +1861,7 @@ function render(){
 function frame(ts){
  requestAnimationFrame(frame);
  const dt=Math.min(.033,Math.max(0,(ts-lastT)/1000||0));lastT=ts;
- try{update(dt);render();bgmTick(dt);if(state=='play')hudUpdate();if(selActive)drawSelCards();drawCdx()}catch(e){console.error(e)}
+ try{update(dt);render();bgmTick(dt);document.body.classList.toggle('aim',mouseLive()&&!modal);if(state=='play')hudUpdate();if(selActive)drawSelCards();drawCdx()}catch(e){console.error(e)}
  for(const k in hit)hit[k]=0}
 (function(){const st=$('stk'),kn=st.querySelector('i');let pid=null;
  const set=e=>{const r=st.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2,rad=r.width/2;let dx=(e.clientX-cx)/rad,dy=(e.clientY-cy)/rad;if(ROT){const t=dx;dx=dy;dy=-t}const l=Math.hypot(dx,dy);if(l>1){dx/=l;dy/=l}joy.x=Math.abs(dx)<.15?0:dx;joy.y=Math.abs(dy)<.15?0:dy;kn.style.transform='translate('+(dx*60)+'%,'+(dy*60)+'%)'};
